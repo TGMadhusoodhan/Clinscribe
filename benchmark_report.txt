@@ -1,0 +1,42 @@
+
+============================================================
+BENCHMARK RESULTS SUMMARY
+Whisper large-v3 | Clinical Hindi vs Swahili
+============================================================
+
+Scenario                          Hindi WER    Swahili WER     Winner
+----------------------------------------------------------------------
+Fever and headache                   13.8%          30.8%       Hindi
+Chest pain and breathlessness        19.4%          10.7%     Swahili
+Diabetes follow-up                   24.1%          16.0%     Swahili
+Cough and TB concern                 11.1%          26.7%       Hindi
+Stomach pain and vomiting            19.4%          26.7%       Hindi
+Joint pain                           21.9%          20.0%     Swahili
+----------------------------------------------------------------------
+AVERAGE                              18.3%          21.8%
+Avg latency                         67.9s         40.9s
+
+============================================================
+CLINICAL USABILITY THRESHOLD: WER < 20%
+============================================================
+Hindi   → 18.3% WER  →  YES
+Swahili → 21.8% WER  →  MARGINAL
+
+============================================================
+RECOMMENDATION: Use Hindi
+WER gap: 3.5 percentage points
+============================================================
+
+INTERPRETATION:
+  <10% WER  → Excellent (comparable to human transcription)
+  10-20% WER → Good (usable for clinical notes with review)
+  20-35% WER → Marginal (significant errors, risky for clinical use)
+  >35% WER  → Poor (not suitable for clinical documentation)
+
+NOTE: These results are on synthetic TTS audio (Edge TTS).
+Real clinical audio will have higher WER due to:
+  - Background noise in clinics
+  - Natural speech disfluencies (um, uh, pauses)
+  - Stronger regional accents
+  - Code-switching mid-sentence
+Expect real-world WER to be 5-15% higher than these numbers.

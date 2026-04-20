@@ -1,0 +1,132 @@
+{
+  "summary": {
+    "model": "large-v3",
+    "clips_per_language": 6,
+    "hindi": {
+      "wer_per_clip": [
+        13.8,
+        19.4,
+        24.1,
+        11.1,
+        19.4,
+        21.9
+      ],
+      "average_wer_percent": 18.3,
+      "average_latency_seconds": 67.9,
+      "clinical_usability": "YES"
+    },
+    "swahili": {
+      "wer_per_clip": [
+        30.8,
+        10.7,
+        16.0,
+        26.7,
+        26.7,
+        20.0
+      ],
+      "average_wer_percent": 21.8,
+      "average_latency_seconds": 40.9,
+      "clinical_usability": "MARGINAL"
+    },
+    "verdict": "Hindi",
+    "wer_difference_percent": 3.5
+  },
+  "clips": [
+    {
+      "id": 1,
+      "scenario": "Fever and headache",
+      "hindi": {
+        "reference": "मुझे तीन दिनों से बुखार है और सिर में दर्द भी है कोई दवाई नहीं ली अभी तक डॉक्टर तापमान 102 डिग्री है पानी पीते रहें और पैरासिटामोल लें",
+        "hypothesis": "मुझे तीन दिनों से बुखार है और सिर में दर्द भी है कोई दवाइ नहीं ली अभी तक डॉक्टर तापमान 102 डिग्री है पानी पीते रहें और पैरा सिटामोल ले",
+        "wer_percent": 13.8,
+        "latency_seconds": 75.78
+      },
+      "swahili": {
+        "reference": "nimekuwa na homa kwa siku tatu na maumivu ya kichwa pia sijachukua dawa yoyote bado daktari joto ni digrii 102 endelea kunywa maji na uchukue paracetamol",
+        "hypothesis": "nimekua na homa kwa siku tatu na maumivu ya kicho pia sijachukua dawa yoyote bado daktari joto ni degree miya moja na mbili endelea kunyo maji na uchukue paracetamol",
+        "wer_percent": 30.8,
+        "latency_seconds": 40.8
+      }
+    },
+    {
+      "id": 2,
+      "scenario": "Chest pain and breathlessness",
+      "hindi": {
+        "reference": "मुझे सीने में दर्द हो रहा है और सांस लेने में तकलीफ है यह दो घंटे से हो रहा है पहले से blood pressure की बीमारी है यह बहुत गंभीर लक्षण हैं अभी ecg करते हैं",
+        "hypothesis": "मुझे सीने में दर्ध हो रहा है और सास लेने में तकलीफ है यह दो घंटे से हो रहा है पहले से ब्लाड प्रेशर की बीमारी है यह बहुत गंभीर लक्षण है अभी इसी जी करते हैं",
+        "wer_percent": 19.4,
+        "latency_seconds": 66.85
+      },
+      "swahili": {
+        "reference": "nina maumivu ya kifua na ugumu wa kupumua hii imekuwa ikitokea kwa masaa mawili nina shinikizo la damu tayari hizi ni dalili nzito sana tutafanya ecg sasa hivi",
+        "hypothesis": "nina maumivu ya kifua na ugumu wa kupumua hii imekua ikitokea kwa masa mawili nina shinikizo la damu tayari hizi ni dalili nzito sana tutafanya ekth sasa hivi",
+        "wer_percent": 10.7,
+        "latency_seconds": 38.36
+      }
+    },
+    {
+      "id": 3,
+      "scenario": "Diabetes follow-up",
+      "hindi": {
+        "reference": "मेरी sugar की जांच करवाई fasting blood sugar 180 आई है क्या आप metformin ले रहे हैं हाँ रोज़ सुबह लेता हूँ खाने में चीनी और चावल कम करें",
+        "hypothesis": "मेरी शुगर की जाच करवाई फास्टिंग ब्लड शुगर 180 आई है क्या आप मेटफॉर्मिन ले रहे हैं हाँ रोज सुबह लेता हूँ खाने में चीनी और चावल कम करें",
+        "wer_percent": 24.1,
+        "latency_seconds": 65.53
+      },
+      "swahili": {
+        "reference": "nimefanya uchunguzi wa sukari yangu sukari ya damu ya kufunga ilikuwa 180 je unachukua metformin ndiyo kila asubuhi punguza sukari na mchele katika chakula chako",
+        "hypothesis": "nimefanya uchunguzi wa sukari yangu sukari ya damu ya kufunga ilikuwa miya moja na themanini je unachukua metformin ndiyo kila asubuhi punguza sukari na mchele katika chakula chako",
+        "wer_percent": 16.0,
+        "latency_seconds": 41.85
+      }
+    },
+    {
+      "id": 4,
+      "scenario": "Cough and TB concern",
+      "hindi": {
+        "reference": "दो हफ्तों से खांसी है कभीकभी बलगम में खून भी आता है क्या आप किसी tb के मरीज़ के संपर्क में आए हाँ मेरे पड़ोसी को tb है सीने का xray और sputum test करना होगा",
+        "hypothesis": "दो हफ्तों से खासी है कभीकभी बलगम में खून भी आता है क्या आप किसी tb के मरीज़ के संपर्क में आएं हाँ मेरे पडोसी को tb है सीने का xray और sputum टेस्ट करना होगा",
+        "wer_percent": 11.1,
+        "latency_seconds": 65.16
+      },
+      "swahili": {
+        "reference": "nina kikohozi kwa wiki mbili wakati mwingine kuna damu katika makohozi je umegusana na mgonjwa wa tb ndiyo jirani yangu ana tb tutahitaji xray ya kifua na mtihani wa makohozi",
+        "hypothesis": "nina kikohozi kwa wiki mbili wakati muingine kuna damu katika makohozi je umegu sana na mgonjwa watbe ndiyo jirani yangu anatbe tutahitaji tirai ya kifua na mtihani wa makohozi",
+        "wer_percent": 26.7,
+        "latency_seconds": 42.01
+      }
+    },
+    {
+      "id": 5,
+      "scenario": "Stomach pain and vomiting",
+      "hindi": {
+        "reference": "पेट में बहुत दर्द है और उल्टी भी हो रही है कल रात से दस्त भी हैं क्या बाहर का खाना खाया था हाँ कल शाम को यह food poisoning लग रही है ors पीते रहें",
+        "hypothesis": "पेट में बहुत दर्ध है और उल्टी भी हो रही है कल राज से दस्त भी है क्या बाहर का खाना खाया था हाँ कल शाम को यहाँ फूट पॉइस्टनिंग लग रही है ओरस पीते रहें",
+        "wer_percent": 19.4,
+        "latency_seconds": 66.58
+      },
+      "swahili": {
+        "reference": "nina maumivu makali ya tumbo na pia natapika nimekuwa na kuhara tangu usiku wa jana je ulikula chakula nje ndiyo jana jioni inaonekana ni sumu ya chakula endelea kunywa ors",
+        "hypothesis": "ninamaumivu makali ya tumbo na pia natapika nimekua na kuhara tangu usikuwa jana j ulikula chakula nje ndiyo jana jioni inaonekana ni sumu ya chakula endelea kunyoa oz",
+        "wer_percent": 26.7,
+        "latency_seconds": 41.37
+      }
+    },
+    {
+      "id": 6,
+      "scenario": "Joint pain",
+      "hindi": {
+        "reference": "दोनों घुटनों में दर्द है सीढ़ियाँ चढ़ने में बहुत तकलीफ होती है यह कितने समय से है तीन महीने से उम्र के साथ arthritis हो सकता है xray और blood test करेंगे",
+        "hypothesis": "दोनों घुटनों में दर्ध है सीढिया चड़ने में बहुत तकलीफ होती है यह कितने समय से है तीन महीने से उम्र के साथ आर्थराइटिस हो सकता है एक्सरे और ब्लड टेस्ट करेंगे",
+        "wer_percent": 21.9,
+        "latency_seconds": 67.51
+      },
+      "swahili": {
+        "reference": "nina maumivu katika magoti yote mawili ni vigumu sana kupanda ngazi hii imekuwa kwa muda gani kwa miezi mitatu arthritis inaweza kutokea na umri tutafanya xray na vipimo vya damu",
+        "hypothesis": "ninamaumivu katika magoti yote mawili nivigumu sana kupanda ngazi hii imekua kwa muda gani kwa miezi mitatu arthritis inaweza kutokea na umri tutafanya trai na vipimo vya damu",
+        "wer_percent": 20.0,
+        "latency_seconds": 40.95
+      }
+    }
+  ]
+}

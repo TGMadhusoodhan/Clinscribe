@@ -1,0 +1,377 @@
+# ClinScribe — Error Log
+
+No errors recorded yet. Every error, exception, test failure, and API problem
+will be appended here immediately when encountered.
+
+Format for each entry:
+
+## ERROR — {datetime}
+**Step:** Step N — filename
+**What I was doing:** one sentence
+**Error type:** ImportError / HTTPError / AssertionError / etc.
+**Full error message:**
+```
+paste full traceback here
+```
+**What I tried:** describe each fix attempt
+**Resolution:** FIXED / BLOCKED / WORKAROUND
+**Impact on project:** none / delayed / blocked
+---
+
+## ERROR — 2026-04-19T18:10:32.296946+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** RuntimeError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_torchcodec.py", line 82, in load_with_torchcodec
+    from torchcodec.decoders import AudioDecoder
+ModuleNotFoundError: No module named 'torchcodec'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 148, in read_audio
+    wav, sr = torchaudio.load(path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\__init__.py", line 86, in load
+    return load_with_torchcodec(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_torchcodec.py", line 84, in load_with_torchcodec
+    raise ImportError(
+ImportError: TorchCodec is required for load_with_torchcodec. Please install torchcodec to use this function.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 151, in read_audio
+    from torchcodec.decoders import AudioDecoder
+ModuleNotFoundError: No module named 'torchcodec'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 159, in transcribe_audio
+    transcript_result = transcribe(tmp_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 83, in transcribe
+    audio_np = _remove_silence(audio_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 57, in _remove_silence
+    wav = _read_audio(audio_path, sampling_rate=16000)
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 156, in read_audio
+    raise RuntimeError(
+RuntimeError: torchaudio version 2.11.0+cpu requires torchcodec for audio I/O. Install torchcodec or pin torchaudio < 2.9
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T18:13:31.099282+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** RuntimeError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_torchcodec.py", line 82, in load_with_torchcodec
+    from torchcodec.decoders import AudioDecoder
+ModuleNotFoundError: No module named 'torchcodec'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 148, in read_audio
+    wav, sr = torchaudio.load(path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\__init__.py", line 86, in load
+    return load_with_torchcodec(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_torchcodec.py", line 84, in load_with_torchcodec
+    raise ImportError(
+ImportError: TorchCodec is required for load_with_torchcodec. Please install torchcodec to use this function.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 151, in read_audio
+    from torchcodec.decoders import AudioDecoder
+ModuleNotFoundError: No module named 'torchcodec'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 230, in transcribe_audio
+    transcript_result = transcribe(tmp_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 83, in transcribe
+    audio_np = _remove_silence(audio_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 57, in _remove_silence
+    wav = _read_audio(audio_path, sampling_rate=16000)
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 156, in read_audio
+    raise RuntimeError(
+RuntimeError: torchaudio version 2.11.0+cpu requires torchcodec for audio I/O. Install torchcodec or pin torchaudio < 2.9
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T18:16:43.830438+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** RuntimeError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 143, in read_audio
+    wav, sr = torchaudio.sox_effects.apply_effects_file(path, effects=effects)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_internal\module_utils.py", line 71, in wrapped
+    return func(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\sox_effects\sox_effects.py", line 275, in apply_effects_file
+    return sox_ext.apply_effects_file(path, effects, normalize, channels_first, format)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 121, in __getattr__
+    self._import_once()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 135, in _import_once
+    self.module = self.import_func()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 85, in _init_sox
+    ext = _import_sox_ext()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 66, in _import_sox_ext
+    raise RuntimeError("sox extension is not supported on Windows")
+RuntimeError: sox extension is not supported on Windows
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 230, in transcribe_audio
+    transcript_result = transcribe(tmp_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 83, in transcribe
+    audio_np = _remove_silence(audio_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 57, in _remove_silence
+    wav = _read_audio(audio_path, sampling_rate=16000)
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 145, in read_audio
+    wav, sr = torchaudio.load(path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_backend\utils.py", line 221, in load
+    backend = dispatcher(uri, format, backend)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_backend\utils.py", line 117, in dispatcher
+    raise RuntimeError(f"Couldn't find appropriate backend to handle uri {uri} and format {format}.")
+RuntimeError: Couldn't find appropriate backend to handle uri C:\Users\tgmad\AppData\Local\Temp\tmpaav6gvgt.mp3 and format None.
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T18:20:43.110497+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** RuntimeError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 143, in read_audio
+    wav, sr = torchaudio.sox_effects.apply_effects_file(path, effects=effects)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_internal\module_utils.py", line 71, in wrapped
+    return func(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\sox_effects\sox_effects.py", line 275, in apply_effects_file
+    return sox_ext.apply_effects_file(path, effects, normalize, channels_first, format)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 121, in __getattr__
+    self._import_once()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 135, in _import_once
+    self.module = self.import_func()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 85, in _init_sox
+    ext = _import_sox_ext()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_extension\utils.py", line 66, in _import_sox_ext
+    raise RuntimeError("sox extension is not supported on Windows")
+RuntimeError: sox extension is not supported on Windows
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 245, in transcribe_audio
+    transcript_result = transcribe(tmp_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 83, in transcribe
+    audio_np = _remove_silence(audio_path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 57, in _remove_silence
+    wav = _read_audio(audio_path, sampling_rate=16000)
+  File "C:\Users\tgmad/.cache\torch\hub\snakers4_silero-vad_master\src\silero_vad\utils_vad.py", line 145, in read_audio
+    wav, sr = torchaudio.load(path)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_backend\utils.py", line 221, in load
+    backend = dispatcher(uri, format, backend)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\torchaudio\_backend\utils.py", line 117, in dispatcher
+    raise RuntimeError(f"Couldn't find appropriate backend to handle uri {uri} and format {format}.")
+RuntimeError: Couldn't find appropriate backend to handle uri C:\Users\tgmad\AppData\Local\Temp\tmpkm7n6vg_.wav and format None.
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T19:04:47.452033+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** HTTPError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 304, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 198, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 172, in _post_fhir
+    resp.raise_for_status()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\requests\models.py", line 1028, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error:  for url: http://localhost:80/openmrs/ws/fhir2/R4/Encounter
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T19:11:44.992212+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** HTTPError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 304, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 198, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 172, in _post_fhir
+    resp.raise_for_status()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\requests\models.py", line 1028, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error:  for url: http://localhost:80/openmrs/ws/fhir2/R4/Encounter
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T19:16:56.721680+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** HTTPError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 304, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 199, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload, session=session)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 172, in _post_fhir
+    resp.raise_for_status()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\requests\models.py", line 1028, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error:  for url: http://localhost:80/openmrs/ws/fhir2/R4/Encounter
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T19:21:31.755656+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** HTTPError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 304, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 199, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload, session=session)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 172, in _post_fhir
+    resp.raise_for_status()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\requests\models.py", line 1028, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error:  for url: http://localhost:80/openmrs/ws/fhir2/R4/Encounter
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T19:29:41.650180+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** InvalidFHIRError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 304, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 201, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload, session=session)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 170, in _post_fhir
+    raise InvalidFHIRError(f"OpenMRS bad request for {resource_type}: {resp.text}")
+pipeline.fhir_write.InvalidFHIRError: OpenMRS bad request for Encounter: {"resourceType":"OperationOutcome","text":{"status":"generated","div":"<div xmlns=\"http://www.w3.org/1999/xhtml\"><h1>Operation Outcome</h1><table border=\"0\"><tr><td style=\"font-weight: bold;\">ERROR</td><td>[]</td><td><pre>Invalid type of request</pre></td>\n\t\t\t</tr>\n\t\t</table>\n\t</div>"},"issue":[{"severity":"error","code":"processing","diagnostics":"Invalid type of request"}]}
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T19:37:03.950457+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** InvalidFHIRError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 304, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 200, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload, session=session)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 169, in _post_fhir
+    raise InvalidFHIRError(f"OpenMRS bad request for {resource_type}: {resp.text}")
+pipeline.fhir_write.InvalidFHIRError: OpenMRS bad request for Encounter: {"resourceType":"OperationOutcome","text":{"status":"generated","div":"<div xmlns=\"http://www.w3.org/1999/xhtml\"><h1>Operation Outcome</h1><table border=\"0\"><tr><td style=\"font-weight: bold;\">ERROR</td><td>[]</td><td><pre>Invalid type of request</pre></td>\n\t\t\t</tr>\n\t\t</table>\n\t</div>"},"issue":[{"severity":"error","code":"processing","diagnostics":"Invalid type of request"}]}
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T20:41:29.625801+00:00
+**Step:** Step 12 — /approve
+**What I was doing:** Writing to OpenMRS FHIR
+**Error type:** InvalidFHIRError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 316, in approve_and_write
+    result = write_encounter_and_conditions(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 200, in write_encounter_and_conditions
+    enc_resp = _post_fhir("Encounter", encounter_payload, session=session)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\fhir_write.py", line 169, in _post_fhir
+    raise InvalidFHIRError(f"OpenMRS bad request for {resource_type}: {resp.text}")
+pipeline.fhir_write.InvalidFHIRError: OpenMRS bad request for Encounter: {"resourceType":"OperationOutcome","text":{"status":"generated","div":"<div xmlns=\"http://www.w3.org/1999/xhtml\"><h1>Operation Outcome</h1><table border=\"0\"><tr><td style=\"font-weight: bold;\">ERROR</td><td>[]</td><td><pre>Invalid type of request</pre></td>\n\t\t\t</tr>\n\t\t</table>\n\t</div>"},"issue":[{"severity":"error","code":"processing","diagnostics":"Invalid type of request"}]}
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-19T20:53:28.344376+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** JSONDecodeError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 262, in transcribe_audio
+    translated_segments = translate_segments(list(transcript_result["segments"]))
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\transcribe.py", line 167, in translate_segments
+    translations = json.loads(raw)
+  File "C:\Users\tgmad\AppData\Local\Programs\Python\Python310\lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+  File "C:\Users\tgmad\AppData\Local\Programs\Python\Python310\lib\json\decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+  File "C:\Users\tgmad\AppData\Local\Programs\Python\Python310\lib\json\decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+```
+**Resolution:** FIXED — Added regex fallback in translate_segments; strips markdown fences correctly; falls back to extracting JSON array with re.search if json.loads fails.
+---
+
+## SESSION SUMMARY — 2026-04-19
+**What was fixed this session:**
+- watchfiles constant reload: caused by .venv inside project dir being monitored. Fix: run `uvicorn review_ui.app:app` without `--reload`, or use `--reload-exclude ".venv"`
+- `/transcribe` JSONDecodeError: Claude returning empty string after markdown fence stripping. Fixed regex in `translate_segments` + added fallback JSON extraction.
+- `/approve` Encounter "Invalid type of request": OpenMRS FHIR requires `type` field with encounter type UUID. Fixed in `build_encounter_payload` — added `type: Consultation (dd528487-82a5-4082-9c72-ed246bd49591)`.
+- Condition name blank in OpenMRS SPA: FHIR Condition API stores with `condition: null`; SPA only shows concept display name. Switched to REST v1 `/ws/rest/v1/condition` with concept lookup.
+- Condition concept field wrong name: was sending `"concept"` but OpenMRS REST condition uses `"condition"` as the field name.
+- Hindi diagnosis names: entities now extracted from English translation (not Hindi full_text), so diagnoses/symptoms are in English.
+- Concept not found for "Arthritis": OpenMRS demo DB lacks many diagnosis concepts. Created: Arthritis, Osteoarthritis, Rheumatoid arthritis, Anemia, Skin rash, Knee pain. Common ones (Fever, Cough, Diabetes, Hypertension etc.) already existed.
+- Concept search returning Drug concepts: added class filter (Finding/Symptom/Diagnosis) in `_lookup_concept`; also added term simplification to strip modifiers like "Suspected", "(age-related)".
+
+**Current state:** Full pipeline working end-to-end. Conditions appear named in OpenMRS SPA Conditions widget.
+---

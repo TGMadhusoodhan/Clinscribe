@@ -1,0 +1,28 @@
+# Environment — never commit secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Generated audio (large binary files, reproducible via generate_corpus.py)
+benchmark_audio/
+corpus/clips/
+
+# Logs (runtime-generated)
+logs/
+
+# Evaluation results (runtime-generated)
+evaluation/results/
+
+# Claude Code internal memory
+MEMORY.md
+memory/
+skills-lock.json
