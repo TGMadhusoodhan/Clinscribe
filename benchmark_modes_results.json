@@ -1,0 +1,425 @@
+{
+  "clips": 6,
+  "online": {
+    "avg_completeness_pct": 84.0,
+    "avg_translate_latency_s": 2.17,
+    "avg_extract_latency_s": 4.94,
+    "avg_total_latency_s": 7.11,
+    "translation_model": "claude-sonnet-4-6",
+    "extraction_model": "claude-sonnet-4-6"
+  },
+  "offline": {
+    "avg_completeness_pct": 60.0,
+    "avg_translate_latency_s": 4.42,
+    "avg_extract_latency_s": 18.55,
+    "avg_total_latency_s": 22.97,
+    "translation_model": "Helsinki-NLP/opus-mt-hi-en",
+    "extraction_model": "Qwen/Qwen2.5-3B-Instruct-AWQ"
+  },
+  "clips_detail": [
+    {
+      "id": 1,
+      "scenario": "Fever and headache",
+      "whisper_latency_s": 55.89,
+      "hindi_text": "मुझे तीन दिनों से बुखार है और सिर में दर्द भी है। कोई दवाइ नहीं ली अभी तक। डॉक्टर, तापमान 102 डिग्री है। पानी पीते रहें और पैरासिटामोल ले।",
+      "online": {
+        "mode": "online",
+        "english_text": "I have had a fever for three days and also have a headache. I haven't taken any medicine yet. Doctor, the temperature is 102 degrees. Keep drinking water and take paracetamol.",
+        "translate_latency_s": 1.97,
+        "extract_latency_s": 2.89,
+        "total_latency_s": 4.86,
+        "entities": {
+          "chief_complaint": "Fever with headache",
+          "history_of_present_illness": "Patient presents with fever for three days accompanied by headache. No medications have been taken prior to this visit. Temperature recorded at 102 degrees Fahrenheit.",
+          "symptoms": [
+            "Fever",
+            "Headache"
+          ],
+          "duration": "3 days",
+          "medications_mentioned": [
+            "Paracetamol"
+          ],
+          "diagnosis": [],
+          "treatment_plan": "Increase fluid intake (keep drinking water) and take paracetamol.",
+          "red_flags": [
+            "Fever of 102°F lasting 3 days"
+          ],
+          "raw_language": "hi"
+        },
+        "completeness": 0.88,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 0,
+          "medications": 1,
+          "red_flags": 1
+        }
+      },
+      "offline": {
+        "mode": "offline",
+        "english_text": "I have three days of fever and pain. No medicine yet. The temperature is 102 degrees.",
+        "translate_latency_s": 20.36,
+        "extract_latency_s": 26.19,
+        "total_latency_s": 46.55,
+        "entities": {
+          "chief_complaint": "fever and pain for 3 days",
+          "history_of_present_illness": "The patient has had a fever and pain for three days without any medication. The temperature is 102 degrees.",
+          "symptoms": [
+            "fever",
+            "pain"
+          ],
+          "duration": "3 days",
+          "medications_mentioned": [],
+          "diagnosis": [],
+          "treatment_plan": "The patient should be advised to take fever-reducing medication and follow up if symptoms persist or worsen.",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.62,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 0,
+          "medications": 0,
+          "red_flags": 0
+        }
+      }
+    },
+    {
+      "id": 2,
+      "scenario": "Chest pain and breathlessness",
+      "whisper_latency_s": 76.01,
+      "hindi_text": "मुझे सीने में दर्ध हो रहा है और सास लेने में तकलीफ है। यह दो घंटे से हो रहा है। पहले से ब्लाड प्रेशर की बीमारी है। यह बहुत गंभीर लक्षण है। अभी इसी जी करते हैं।",
+      "online": {
+        "mode": "online",
+        "english_text": "I am having chest pain and difficulty breathing. This has been happening for two hours. I already have a blood pressure condition. These are very serious symptoms. Let's deal with this right now.",
+        "translate_latency_s": 2.11,
+        "extract_latency_s": 3.66,
+        "total_latency_s": 5.77,
+        "entities": {
+          "chief_complaint": "Chest pain and difficulty breathing",
+          "history_of_present_illness": "Patient presents with chest pain and difficulty breathing that has been ongoing for two hours. Patient has a known history of blood pressure condition. Symptoms are described as serious and require immediate attention.",
+          "symptoms": [
+            "Chest pain",
+            "Difficulty breathing"
+          ],
+          "duration": "2 hours",
+          "medications_mentioned": [],
+          "diagnosis": [],
+          "treatment_plan": "Immediate evaluation and management required given serious presenting symptoms of chest pain and difficulty breathing in a patient with known hypertension.",
+          "red_flags": [
+            "Acute chest pain",
+            "Difficulty breathing (dyspnea)",
+            "Known blood pressure condition (hypertension)",
+            "Symptoms persisting for 2 hours",
+            "Possible cardiac or pulmonary emergency"
+          ],
+          "raw_language": "hi"
+        },
+        "completeness": 0.75,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 0,
+          "medications": 0,
+          "red_flags": 5
+        }
+      },
+      "offline": {
+        "mode": "offline",
+        "english_text": "I'm growing up in the chest and I'm suffering from taking in my mother-in-law. It's going through two hours.",
+        "translate_latency_s": 1.55,
+        "extract_latency_s": 16.22,
+        "total_latency_s": 17.77,
+        "entities": {
+          "chief_complaint": "growing up in the chest and suffering from taking in my mother-in-law",
+          "history_of_present_illness": "It's going through two hours.",
+          "symptoms": [
+            "chest growing up",
+            "taking in mother-in-law"
+          ],
+          "duration": "two hours",
+          "medications_mentioned": [],
+          "diagnosis": [],
+          "treatment_plan": "",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.5,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 0,
+          "medications": 0,
+          "red_flags": 0
+        }
+      }
+    },
+    {
+      "id": 3,
+      "scenario": "Diabetes follow-up",
+      "whisper_latency_s": 71.95,
+      "hindi_text": "मेरी शुगर की जाच करवाई। फास्टिंग ब्लड शुगर 180 आई है। क्या आप मेटफॉर्मिन ले रहे हैं? हाँ, रोज सुबह लेता हूँ। खाने में चीनी और चावल कम करें।",
+      "online": {
+        "mode": "online",
+        "english_text": "I got my sugar tested. Fasting blood sugar came out to be 180. Are you taking Metformin? Yes, I take it every morning. Reduce sugar and rice in your diet.",
+        "translate_latency_s": 2.14,
+        "extract_latency_s": 3.41,
+        "total_latency_s": 5.55,
+        "entities": {
+          "chief_complaint": "Elevated fasting blood sugar",
+          "history_of_present_illness": "Patient presented with elevated fasting blood sugar reading of 180. Patient is currently on Metformin taken every morning. Dietary counseling was provided to reduce sugar and rice intake.",
+          "symptoms": [],
+          "duration": "not specified",
+          "medications_mentioned": [
+            "Metformin"
+          ],
+          "diagnosis": [
+            "Diabetes mellitus (uncontrolled, based on fasting blood sugar of 180)"
+          ],
+          "treatment_plan": "Continue Metformin every morning. Reduce sugar and rice in diet.",
+          "red_flags": [
+            "Fasting blood sugar of 180 mg/dL indicating poor glycemic control"
+          ],
+          "raw_language": "hi"
+        },
+        "completeness": 0.88,
+        "entity_counts": {
+          "symptoms": 0,
+          "diagnoses": 1,
+          "medications": 1,
+          "red_flags": 1
+        }
+      },
+      "offline": {
+        "mode": "offline",
+        "english_text": "Fasting blood pressure has come 180. Are you taking Metzin? Yes, every morning I take Chinese and rice to eat.",
+        "translate_latency_s": 0.91,
+        "extract_latency_s": 19.92,
+        "total_latency_s": 20.83,
+        "entities": {
+          "chief_complaint": "Fasting blood pressure is high",
+          "history_of_present_illness": "Patient mentions taking Metzin daily, but does not provide details on symptoms or how long they have been experiencing high fasting blood pressure.",
+          "symptoms": [
+            "high fasting blood pressure"
+          ],
+          "duration": "unknown",
+          "medications_mentioned": [
+            "Metzin"
+          ],
+          "diagnosis": [],
+          "treatment_plan": "Order a follow-up blood pressure check and review diet plan with patient.",
+          "red_flags": [
+            "high fasting blood pressure"
+          ],
+          "raw_language": "hi"
+        },
+        "completeness": 0.88,
+        "entity_counts": {
+          "symptoms": 1,
+          "diagnoses": 0,
+          "medications": 1,
+          "red_flags": 1
+        }
+      }
+    },
+    {
+      "id": 4,
+      "scenario": "Cough and TB concern",
+      "whisper_latency_s": 72.55,
+      "hindi_text": "दो हफ्तों से खासी है। कभी-कभी बलगम में खून भी आता है। क्या आप किसी TB के मरीज़ के संपर्क में आएं। हाँ, मेरे पडोसी को TB है। सीने का X-ray और Sputum टेस्ट करना होगा।",
+      "online": {
+        "mode": "online",
+        "english_text": "Has had a cough for two weeks. Sometimes there is also blood in the sputum. Have you come in contact with any TB patient? Yes, my neighbor has TB. A chest X-ray and sputum test will need to be done.",
+        "translate_latency_s": 2.08,
+        "extract_latency_s": 11.41,
+        "total_latency_s": 13.49,
+        "entities": {
+          "chief_complaint": "Cough with blood in sputum",
+          "history_of_present_illness": "Patient has been experiencing cough for two weeks. Sometimes there is blood in the sputum. Patient reports contact with a neighbor who has TB, suggesting possible TB exposure.",
+          "symptoms": [
+            "Cough",
+            {
+              "text": "Hemoptysis (blood in sputum)",
+              "potentially_hallucinated": true
+            }
+          ],
+          "duration": "Two weeks",
+          "medications_mentioned": [],
+          "diagnosis": [
+            {
+              "text": "Suspected Tuberculosis (TB) - to be confirmed",
+              "potentially_hallucinated": true
+            }
+          ],
+          "treatment_plan": "Chest X-ray and sputum test to be performed for further evaluation and diagnosis.",
+          "red_flags": [
+            "Hemoptysis (blood in sputum)",
+            "Contact with a known TB patient (neighbor)"
+          ],
+          "raw_language": "hi"
+        },
+        "completeness": 0.88,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 1,
+          "medications": 0,
+          "red_flags": 2
+        }
+      },
+      "offline": {
+        "mode": "offline",
+        "english_text": "Well, for two weeks there's been blood at any given time. If you come into contact with a TB patient, I've got T-B.",
+        "translate_latency_s": 1.34,
+        "extract_latency_s": 16.61,
+        "total_latency_s": 17.95,
+        "entities": {
+          "chief_complaint": "blood",
+          "history_of_present_illness": "For two weeks there has been blood at any given time. If you come into contact with a TB patient, I've got T-B.",
+          "symptoms": [
+            "blood"
+          ],
+          "duration": "two weeks",
+          "medications_mentioned": [],
+          "diagnosis": [],
+          "treatment_plan": "",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.5,
+        "entity_counts": {
+          "symptoms": 1,
+          "diagnoses": 0,
+          "medications": 0,
+          "red_flags": 0
+        }
+      }
+    },
+    {
+      "id": 5,
+      "scenario": "Stomach pain and vomiting",
+      "whisper_latency_s": 73.27,
+      "hindi_text": "पेट में बहुत दर्ध है और उल्टी भी हो रही है। कल राज से दस्त भी है। क्या बाहर का खाना खाया था। हाँ, कल शाम को। यहाँ फूट पॉइस्टनिंग लग रही है। ओरस पीते रहें।",
+      "online": {
+        "mode": "online",
+        "english_text": "There is a lot of pain in the stomach and vomiting is also happening. Since yesterday there has been diarrhea as well. Did you eat outside food? Yes, yesterday evening. This seems like food poisoning. Keep drinking ORS.",
+        "translate_latency_s": 2.89,
+        "extract_latency_s": 4.45,
+        "total_latency_s": 7.34,
+        "entities": {
+          "chief_complaint": "Stomach pain and vomiting with diarrhea",
+          "history_of_present_illness": "Patient presents with significant stomach pain and vomiting. Diarrhea has been present since yesterday. Patient reports eating outside food yesterday evening, which is likely the precipitating cause.",
+          "symptoms": [
+            "Stomach pain",
+            "Vomiting",
+            "Diarrhea"
+          ],
+          "duration": "Since yesterday (approximately 1 day)",
+          "medications_mentioned": [
+            "ORS (Oral Rehydration Solution)"
+          ],
+          "diagnosis": [
+            "Food poisoning"
+          ],
+          "treatment_plan": "Keep drinking ORS (Oral Rehydration Solution) to maintain hydration.",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.88,
+        "entity_counts": {
+          "symptoms": 3,
+          "diagnoses": 1,
+          "medications": 1,
+          "red_flags": 0
+        }
+      },
+      "offline": {
+        "mode": "offline",
+        "english_text": "There's a lot of confusion in the stomach, and there's also diarrhea from the state tomorrow. What you ate, yes, tomorrow evening.",
+        "translate_latency_s": 1.2,
+        "extract_latency_s": 16.91,
+        "total_latency_s": 18.11,
+        "entities": {
+          "chief_complaint": "stomach discomfort and diarrhea",
+          "history_of_present_illness": "The patient has been experiencing a lot of stomach discomfort and diarrhea starting from tomorrow evening.",
+          "symptoms": [
+            "stomach discomfort",
+            "diarrhea"
+          ],
+          "duration": "starting from tomorrow evening",
+          "medications_mentioned": [],
+          "diagnosis": [],
+          "treatment_plan": "Further investigation and consultation with a gastroenterologist is recommended.",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.62,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 0,
+          "medications": 0,
+          "red_flags": 0
+        }
+      }
+    },
+    {
+      "id": 6,
+      "scenario": "Joint pain",
+      "whisper_latency_s": 71.7,
+      "hindi_text": "दोनों घुटनों में दर्ध है। सीडिया चड़ने में बहुत तकलीफ होती है। यह कितने समय से है। तीन महीने से। उम्र के साथ आर्थराइटिस हो सकता है। एक्सरे और ब्लड टेस्ट करेंगे।",
+      "online": {
+        "mode": "online",
+        "english_text": "There is pain in both knees. There is a lot of difficulty climbing stairs. How long has this been? For three months. Arthritis can occur with age. We will do an X-ray and blood test.",
+        "translate_latency_s": 1.84,
+        "extract_latency_s": 3.81,
+        "total_latency_s": 5.65,
+        "entities": {
+          "chief_complaint": "Pain in both knees with difficulty climbing stairs",
+          "history_of_present_illness": "Patient presents with pain in both knees for three months. Reports significant difficulty climbing stairs. Doctor noted that arthritis can occur with age.",
+          "symptoms": [
+            "Bilateral knee pain",
+            "Difficulty climbing stairs"
+          ],
+          "duration": "3 months",
+          "medications_mentioned": [],
+          "diagnosis": [
+            "Possible arthritis (age-related)"
+          ],
+          "treatment_plan": "X-ray and blood tests ordered for further evaluation",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.75,
+        "entity_counts": {
+          "symptoms": 2,
+          "diagnoses": 1,
+          "medications": 0,
+          "red_flags": 0
+        }
+      },
+      "offline": {
+        "mode": "offline",
+        "english_text": "Both knees are under the weight of a lot of pain. How long has this been since I was three months old, Arthur might have been diagnosed with an X ray and blood tests.",
+        "translate_latency_s": 1.17,
+        "extract_latency_s": 15.48,
+        "total_latency_s": 16.65,
+        "entities": {
+          "chief_complaint": "pain in both knees",
+          "history_of_present_illness": "Arthur might have been diagnosed with an X ray and blood tests since he was three months old, how long has this been",
+          "symptoms": [
+            "pain in both knees"
+          ],
+          "duration": "three months",
+          "medications_mentioned": [],
+          "diagnosis": [],
+          "treatment_plan": "",
+          "red_flags": [],
+          "raw_language": "hi"
+        },
+        "completeness": 0.5,
+        "entity_counts": {
+          "symptoms": 1,
+          "diagnoses": 0,
+          "medications": 0,
+          "red_flags": 0
+        }
+      }
+    }
+  ]
+}

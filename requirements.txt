@@ -3,6 +3,13 @@ openai-whisper==20250625
 anthropic==0.96.0
 silero-vad==6.2.1
 
+# Offline mode — IndicTrans2 + vLLM client
+# Install IndicTransToolkit separately: pip install git+https://github.com/AI4Bharat/IndicTrans2.git#subdirectory=huggingface_interface/IndicTransToolkit
+openai>=1.0.0        # used as vLLM client (OpenAI-compatible API)
+transformers>=4.40.0
+sentencepiece
+sacremoses
+
 # Web server
 fastapi==0.136.0
 uvicorn[standard]==0.44.0

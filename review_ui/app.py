@@ -13,13 +13,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import config
 from pipeline.extract import extract
+from pipeline.extract_offline import extract_offline
 from pipeline.fhir_write import (
     OpenMRSUnavailableError,
     write_encounter_and_conditions,
@@ -27,6 +28,7 @@ from pipeline.fhir_write import (
 )
 from pipeline.map_codes import map_codes
 from pipeline.transcribe import transcribe, translate_segments
+from pipeline.translate_offline import translate_segments_offline
 
 logger = logging.getLogger(__name__)
 
@@ -215,12 +217,22 @@ _ALLOWED_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a"}
 
 
 @app.post("/transcribe")
-async def transcribe_audio(audio: UploadFile = File(...)):
+async def transcribe_audio(
+    audio: UploadFile = File(...),
+    mode: str = Form("online"),
+):
     """
     What it does: Runs the full pipeline (transcribe → translate → extract → map_codes).
+    mode='online'  — uses Claude API for translate + extract (requires internet + API key)
+    mode='offline' — uses IndicTrans2 + vLLM for translate + extract (fully local)
     Accepts MP3/WAV. Returns all pipeline results with per-stage timing.
     On any pipeline error: returns 500 with stage name and error detail.
     """
+    if mode == "online" and not config.ANTHROPIC_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="Online mode requires ANTHROPIC_API_KEY in .env"
+        )
     ext = Path(audio.filename or "").suffix.lower()
     if ext not in _ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -259,7 +271,10 @@ async def transcribe_audio(audio: UploadFile = File(...)):
 
         # Stage 2: translate
         t0 = time.monotonic()
-        translated_segments = translate_segments(list(transcript_result["segments"]))
+        if mode == "offline":
+            translated_segments = translate_segments_offline(list(transcript_result["segments"]))
+        else:
+            translated_segments = translate_segments(list(transcript_result["segments"]))
         timings["translate"] = round(time.monotonic() - t0, 2)
 
         # Stage 3: extract — run on English translation so all entities are in English.
@@ -270,7 +285,10 @@ async def transcribe_audio(audio: UploadFile = File(...)):
             seg.get("english_translation", seg.get("text", ""))
             for seg in translated_segments
         )
-        entities = extract(english_full_text)
+        if mode == "offline":
+            entities = extract_offline(english_full_text)
+        else:
+            entities = extract(english_full_text)
         timings["extract"] = round(time.monotonic() - t0, 2)
 
         # Stage 4: map codes (on diagnosis list)
@@ -289,6 +307,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
             "entities": entities,
             "mapped_codes": coded,
             "processing_time_seconds": timings,
+            "mode": mode,
         }
 
     except Exception as e:
@@ -317,6 +336,8 @@ async def approve_and_write(req: ApproveRequest):
     """
     if not req.patient_uuid or not req.patient_uuid.strip():
         raise HTTPException(status_code=400, detail="patient_uuid is required")
+
+    logger.warning(f"[approve] diagnoses received: {req.edited_entities.get('diagnosis', [])}")
 
     try:
         result = write_encounter_and_conditions(

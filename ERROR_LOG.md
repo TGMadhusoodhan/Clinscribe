@@ -375,3 +375,173 @@ json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 
 **Current state:** Full pipeline working end-to-end. Conditions appear named in OpenMRS SPA Conditions widget.
 ---
+
+## ERROR — 2026-04-27T18:29:49.996221+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** ModuleNotFoundError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 275, in transcribe_audio
+    translated_segments = translate_segments_offline(list(transcript_result["segments"]))
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\translate_offline.py", line 44, in translate_segments_offline
+    ip, tokenizer, model, device = _load_models()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\translate_offline.py", line 21, in _load_models
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+ModuleNotFoundError: No module named 'transformers'
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-27T18:39:34.330848+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** ModuleNotFoundError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 275, in transcribe_audio
+    translated_segments = translate_segments_offline(list(transcript_result["segments"]))
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\translate_offline.py", line 44, in translate_segments_offline
+    ip, tokenizer, model, device = _load_models()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\translate_offline.py", line 22, in _load_models
+    from IndicTransToolkit.processor import IndicProcessor
+ModuleNotFoundError: No module named 'IndicTransToolkit'
+
+```
+**Resolution:** BLOCKED — needs investigation
+---
+
+## ERROR — 2026-04-27T19:01:33.954227+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** OSError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_http.py", line 761, in hf_raise_for_status
+    response.raise_for_status()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '401 Unauthorized' for url 'https://huggingface.co/ai4bharat/indictrans2-hi-en-dist-200M/resolve/main/config.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\utils\hub.py", line 422, in cached_files
+    hf_hub_download(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 997, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1148, in _hf_hub_download_to_cache_dir
+    _raise_on_head_call_error(head_call_error, force_download, local_files_only)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1782, in _raise_on_head_call_error
+    raise head_call_error
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1669, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1591, in get_hf_file_metadata
+    response = _httpx_follow_relative_redirects_with_backoff(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_http.py", line 692, in _httpx_follow_relative_redirects_with_backoff
+    hf_raise_for_status(response)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_http.py", line 835, in hf_raise_for_status
+    raise _format(RepositoryNotFoundError, message, response, repo_type=repo_type, repo_id=repo_id) from e
+huggingface_hub.errors.RepositoryNotFoundError: 401 Client Error. (Request ID: Root=1-69efb28e-796b7a2a60a489fa7f5bdc8f;0dee8be0-92ac-4d23-8deb-22c1654ae910)
+
+Repository Not Found for url: https://huggingface.co/ai4bharat/indictrans2-hi-en-dist-200M/resolve/main/config.json.
+Please make sure you specified the correct `repo_id` and `repo_type`.
+If you are trying to access a private or gated repo, make sure you are authenticated and your token has the required permissions.
+For more details, see https://huggingface.co/docs/huggingface_hub/authentication
+Invalid username or password.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\models\auto\tokenization_auto.py", line 686, in from_pretrained
+    config = AutoConfig.from_pretrained(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\models\auto\configuration_auto.py", line 374, in from_pretrained
+    config_dict, unused_kwargs = PreTrainedConfig.get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\configuration_utils.py", line 673, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\configuration_utils.py", line 728, in _get_config_dict
+    resolved_config_file = cached_file(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\utils\hub.py", line 278, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\utils\hub.py", line 454, in cached_files
+    raise OSError(
+OSError: ai4bharat/indictrans2-hi-en-dist-200M is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_http.py", line 761, in hf_raise_for_status
+    response.raise_for_status()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '401 Unauthorized' for url 'https://huggingface.co/ai4bharat/indictrans2-hi-en-dist-200M/resolve/main/config.json'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\utils\hub.py", line 422, in cached_files
+    hf_hub_download(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 997, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1148, in _hf_hub_download_to_cache_dir
+    _raise_on_head_call_error(head_call_error, force_download, local_files_only)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1782, in _raise_on_head_call_error
+    raise head_call_error
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1669, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\file_download.py", line 1591, in get_hf_file_metadata
+    response = _httpx_follow_relative_redirects_with_backoff(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_http.py", line 692, in _httpx_follow_relative_redirects_with_backoff
+    hf_raise_for_status(response)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\huggingface_hub\utils\_http.py", line 835, in hf_raise_for_status
+    raise _format(RepositoryNotFoundError, message, response, repo_type=repo_type, repo_id=repo_id) from e
+huggingface_hub.errors.RepositoryNotFoundError: 401 Client Error. (Request ID: Root=1-69efb28e-74f5e6d54381f72d2d788958;4a54576a-f941-4a46-8d19-aecaa11c4c48)
+
+Repository Not Found for url: https://huggingface.co/ai4bharat/indictrans2-hi-en-dist-200M/resolve/main/config.json.
+Please make sure you specified the correct `repo_id` and `repo_type`.
+If you are trying to access a private or gated repo, make sure you are authenticated and your token has the required permissions.
+For more details, see https://huggingface.co/docs/huggingface_hub/authentication
+Invalid username or password.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 275, in transcribe_audio
+    translated_segments = translate_segments_offline(list(transcript_result["segments"]))
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\translate_offline.py", line 44, in translate_segments_offline
+    ip, tokenizer, model, device = _load_models()
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\translate_offline.py", line 26, in _load_models
+    tokenizer = AutoTokenizer.from_pretrained(_INDICTRANS_MODEL, trust_remote_code=True)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\models\auto\tokenization_auto.py", line 690, in from_pretrained
+    config = PreTrainedConfig.from_pretrained(pretrained_model_name_or_path, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\configuration_utils.py", line 632, in from_pretrained
+    config_dict, kwargs = cls.get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\configuration_utils.py", line 673, in get_config_dict
+    config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\configuration_utils.py", line 728, in _get_config_dict
+    resolved_config_file = cached_file(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\utils\hub.py", line 278, in cached_file
+    file = cached_files(path_or_repo_id=path_or_repo_id, filenames=[filename], **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\transformers\utils\hub.py", line 454, in cached_files
+    raise OSError(
+OSError: ai4bharat/indictrans2-hi-en-dist-200M is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `hf auth login` or by passing `token=<your_token>`
+
+```
+**Resolution:** BLOCKED — needs investigation
+---

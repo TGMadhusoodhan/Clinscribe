@@ -70,6 +70,33 @@
     .logo-name { font-weight: 600; font-size: 1rem; color: var(--white); letter-spacing: -.01em; }
     .logo-tag  { font-size: .72rem; color: var(--slate); letter-spacing: .04em; }
 
+    /* ── Mode toggle ─────────────────────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      background: var(--navy-mid);
+      border: 1px solid var(--navy-border);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .mode-btn {
+      padding: .28rem .85rem;
+      border-radius: 999px;
+      border: none;
+      font-size: .74rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      background: transparent;
+      color: var(--slate);
+    }
+    .mode-btn.active {
+      background: var(--teal);
+      color: var(--white);
+    }
+    .mode-btn:not(.active):hover { color: var(--white); }
+
     .status-pill {
       display: flex;
       align-items: center;
@@ -567,6 +594,10 @@
     <span class="logo-name">ClinScribe</span>
     <span class="logo-tag">Hindi AI Clinical Scribe</span>
   </div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="mode-online" onclick="setMode('online')">⚡ Online</button>
+    <button class="mode-btn" id="mode-offline" onclick="setMode('offline')">🏥 Offline</button>
+  </div>
   <div class="status-pill">
     <span class="dot loading" id="status-dot"></span>
     <span id="status-text">Connecting…</span>
@@ -624,8 +655,8 @@
     <div class="sidebar-footer" id="pipeline-legend" style="display:none">
       <div style="font-size:.67rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);margin-bottom:.15rem">Pipeline</div>
       <div class="pipeline-item"><span class="pipeline-dot" id="pl-transcribe"></span>Whisper large-v3 transcription</div>
-      <div class="pipeline-item"><span class="pipeline-dot" id="pl-translate"></span>Claude translation</div>
-      <div class="pipeline-item"><span class="pipeline-dot" id="pl-extract"></span>Claude entity extraction</div>
+      <div class="pipeline-item"><span class="pipeline-dot" id="pl-translate"></span><span id="pl-translate-label">Claude translation</span></div>
+      <div class="pipeline-item"><span class="pipeline-dot" id="pl-extract"></span><span id="pl-extract-label">Claude entity extraction</span></div>
       <div class="pipeline-item"><span class="pipeline-dot" id="pl-codes"></span>ICD-10 + SNOMED mapping</div>
     </div>
   </aside>
@@ -729,6 +760,11 @@
                 <span class="card-chip" id="codes-chip" style="margin-left:.5rem;float:none"></span>
               </label>
               <div class="diag-list" id="diagnoses-list"></div>
+              <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+                <input id="manual-diag-input" class="finput" style="flex:1;padding:.4rem .7rem;font-size:.85rem;" placeholder="Type a diagnosis and press Add…">
+                <button id="manual-diag-btn" type="button" style="padding:.4rem .9rem;background:var(--teal);color:#fff;border:none;border-radius:var(--radius);font-size:.85rem;cursor:pointer;">Add</button>
+              </div>
+              <div class="diag-list" id="manual-diagnoses-list" style="margin-top:.4rem;"></div>
             </div>
 
             <div class="field">
@@ -803,7 +839,21 @@ const state = {
   audioFile: null,
   data: null,           // full /transcribe response
   approved: false,
+  mode: 'online',       // 'online' | 'offline'
 };
+
+// ── Mode toggle ─────────────────────────────────────────────────────────────
+function setMode(m) {
+  state.mode = m;
+  document.getElementById('mode-online').classList.toggle('active', m === 'online');
+  document.getElementById('mode-offline').classList.toggle('active', m === 'offline');
+  // Update pipeline legend labels
+  const isOffline = m === 'offline';
+  document.getElementById('pl-translate-label').textContent =
+    isOffline ? 'IndicTrans2 translation' : 'Claude translation';
+  document.getElementById('pl-extract-label').textContent =
+    isOffline ? 'Qwen2.5-7B extraction' : 'Claude entity extraction';
+}
 
 // ── Health ─────────────────────────────────────────────────────────────────
 (async () => {
@@ -1005,6 +1055,7 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
 
   const form = new FormData();
   form.append('audio', state.audioFile);
+  form.append('mode', state.mode);
 
   try {
     const r = await fetch('/transcribe', { method: 'POST', body: form });
@@ -1158,7 +1209,8 @@ function updateApproveSummary() {
 
   if (state.data) {
     const codes = state.data.mapped_codes || [];
-    const diagCount = codes.length;
+    const manualCount = document.querySelectorAll('#manual-diagnoses-list .manual-diag-term').length;
+    const diagCount = codes.length + manualCount;
     const codeCount = codes.reduce((n, mc) => n + (mc.icd10 ? 1 : 0) + (mc.snomed ? 1 : 0), 0);
     document.getElementById('sum-diag-count').textContent = diagCount;
     document.getElementById('sum-code-count').textContent = codeCount;
@@ -1177,6 +1229,24 @@ function updateApproveBtn() {
   document.getElementById('approve-btn').disabled =
     !(state.patient && state.data && !state.approved);
 }
+
+function addManualDiagnosis() {
+  const input = document.getElementById('manual-diag-input');
+  const term = input.value.trim();
+  if (!term) return;
+  const container = document.getElementById('manual-diagnoses-list');
+  const card = document.createElement('div');
+  card.className = 'diag-card';
+  card.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
+  card.innerHTML = `<span class="manual-diag-term" style="font-size:.9rem;font-weight:500;">${esc(term)}</span><button type="button" style="background:none;border:none;color:var(--slate);cursor:pointer;font-size:1rem;" title="Remove">×</button>`;
+  card.querySelector('button').addEventListener('click', () => { card.remove(); updateApproveSummary(); });
+  container.appendChild(card);
+  input.value = '';
+  input.focus();
+  updateApproveSummary();
+}
+document.getElementById('manual-diag-btn').addEventListener('click', addManualDiagnosis);
+document.getElementById('manual-diag-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addManualDiagnosis(); } });
 
 document.getElementById('approve-btn').addEventListener('click', async () => {
   const name = state.patient?.display || 'this patient';
@@ -1249,7 +1319,10 @@ function gatherEditedEntities() {
     medications_mentioned:[...document.querySelectorAll('#medications-pills .pill')].map(p =>
                             p.childNodes[0]?.textContent?.trim() || p.textContent.replace('×','').trim()
                           ),
-    diagnosis:            [...document.querySelectorAll('#diagnoses-list .diag-term')].map(s => s.textContent.trim()),
+    diagnosis:            [
+                            ...[...document.querySelectorAll('#diagnoses-list .diag-term')].map(s => s.textContent.trim()),
+                            ...[...document.querySelectorAll('#manual-diagnoses-list .manual-diag-term')].map(s => s.textContent.trim()),
+                          ].filter(Boolean),
     red_flags:            state.data?.entities?.red_flags || [],
     raw_language:         'hi',
   };

@@ -1,0 +1,172 @@
+
+=================================================================
+RESULTS: Online (Claude) vs Offline (MarianMT + Qwen)
+=================================================================
+
+Entity Completeness (% of fields filled)
+Scenario                                 Online        Offline
+--------------------------------------------------------------
+Fever and headache                          88%            62%
+Chest pain and breathlessness               75%            50%
+Diabetes follow-up                          88%            88%
+Cough and TB concern                        88%            50%
+Stomach pain and vomiting                   88%            62%
+Joint pain                                  75%            50%
+--------------------------------------------------------------
+AVERAGE                                   84.0%          60.0%
+
+Latency (seconds)
+Stage                                    Online        Offline
+--------------------------------------------------------------
+Translation                                2.2s           4.4s
+Extraction                                 4.9s          18.6s
+Total (translate + extract)                7.1s          23.0s
+
+Models
+--------------------------------------------------------------
+  Online  translation : claude-sonnet-4-6
+  Online  extraction  : claude-sonnet-4-6
+  Offline translation : Helsinki-NLP/opus-mt-hi-en
+  Offline extraction  : Qwen/Qwen2.5-3B-Instruct-AWQ
+
+=================================================================
+TRANSLATION COMPARISON (Hindi → English)
+=================================================================
+
+Clip 1: Fever and headache
+  Hindi   : मुझे तीन दिनों से बुखार है और सिर में दर्द भी है। कोई दवाइ नहीं ली अभी तक। डॉक्टर, तापमान 102 डिग्री है। पानी पीते रहें 
+  Online  : I have had a fever for three days and also have a headache. I haven't taken any medicine yet. Doctor, the temperature is
+  Offline : I have three days of fever and pain. No medicine yet. The temperature is 102 degrees.
+
+Clip 2: Chest pain and breathlessness
+  Hindi   : मुझे सीने में दर्ध हो रहा है और सास लेने में तकलीफ है। यह दो घंटे से हो रहा है। पहले से ब्लाड प्रेशर की बीमारी है। यह बह
+  Online  : I am having chest pain and difficulty breathing. This has been happening for two hours. I already have a blood pressure 
+  Offline : I'm growing up in the chest and I'm suffering from taking in my mother-in-law. It's going through two hours.
+
+Clip 3: Diabetes follow-up
+  Hindi   : मेरी शुगर की जाच करवाई। फास्टिंग ब्लड शुगर 180 आई है। क्या आप मेटफॉर्मिन ले रहे हैं? हाँ, रोज सुबह लेता हूँ। खाने में ची
+  Online  : I got my sugar tested. Fasting blood sugar came out to be 180. Are you taking Metformin? Yes, I take it every morning. R
+  Offline : Fasting blood pressure has come 180. Are you taking Metzin? Yes, every morning I take Chinese and rice to eat.
+
+Clip 4: Cough and TB concern
+  Hindi   : दो हफ्तों से खासी है। कभी-कभी बलगम में खून भी आता है। क्या आप किसी TB के मरीज़ के संपर्क में आएं। हाँ, मेरे पडोसी को TB 
+  Online  : Has had a cough for two weeks. Sometimes there is also blood in the sputum. Have you come in contact with any TB patient
+  Offline : Well, for two weeks there's been blood at any given time. If you come into contact with a TB patient, I've got T-B.
+
+Clip 5: Stomach pain and vomiting
+  Hindi   : पेट में बहुत दर्ध है और उल्टी भी हो रही है। कल राज से दस्त भी है। क्या बाहर का खाना खाया था। हाँ, कल शाम को। यहाँ फूट पॉ
+  Online  : There is a lot of pain in the stomach and vomiting is also happening. Since yesterday there has been diarrhea as well. D
+  Offline : There's a lot of confusion in the stomach, and there's also diarrhea from the state tomorrow. What you ate, yes, tomorro
+
+Clip 6: Joint pain
+  Hindi   : दोनों घुटनों में दर्ध है। सीडिया चड़ने में बहुत तकलीफ होती है। यह कितने समय से है। तीन महीने से। उम्र के साथ आर्थराइटिस 
+  Online  : There is pain in both knees. There is a lot of difficulty climbing stairs. How long has this been? For three months. Art
+  Offline : Both knees are under the weight of a lot of pain. How long has this been since I was three months old, Arthur might have
+
+=================================================================
+ENTITY EXTRACTION COMPARISON
+=================================================================
+
+Clip 1: Fever and headache
+  Online  | complaint  : Fever with headache
+  Online  | symptoms   : ['Fever', 'Headache']
+  Online  | diagnosis  : []
+  Online  | medications: ['Paracetamol']
+  Online  | duration   : 3 days
+  Online  | treatment  : Increase fluid intake (keep drinking water) and take paracetamol.
+  Online  | red_flags  : ['Fever of 102°F lasting 3 days']
+  Offline | complaint  : fever and pain for 3 days
+  Offline | symptoms   : ['fever', 'pain']
+  Offline | diagnosis  : []
+  Offline | medications: []
+  Offline | duration   : 3 days
+  Offline | treatment  : The patient should be advised to take fever-reducing medication and follow up if
+  Offline | red_flags  : []
+
+Clip 2: Chest pain and breathlessness
+  Online  | complaint  : Chest pain and difficulty breathing
+  Online  | symptoms   : ['Chest pain', 'Difficulty breathing']
+  Online  | diagnosis  : []
+  Online  | medications: []
+  Online  | duration   : 2 hours
+  Online  | treatment  : Immediate evaluation and management required given serious presenting symptoms o
+  Online  | red_flags  : ['Acute chest pain', 'Difficulty breathing (dyspnea)', 'Known blood pressure condition (hypertension)', 'Symptoms persisting for 2 hours', 'Possible cardiac or pulmonary emergency']
+  Offline | complaint  : growing up in the chest and suffering from taking in my mother-in-law
+  Offline | symptoms   : ['chest growing up', 'taking in mother-in-law']
+  Offline | diagnosis  : []
+  Offline | medications: []
+  Offline | duration   : two hours
+  Offline | treatment  : 
+  Offline | red_flags  : []
+
+Clip 3: Diabetes follow-up
+  Online  | complaint  : Elevated fasting blood sugar
+  Online  | symptoms   : []
+  Online  | diagnosis  : ['Diabetes mellitus (uncontrolled, based on fasting blood sugar of 180)']
+  Online  | medications: ['Metformin']
+  Online  | duration   : not specified
+  Online  | treatment  : Continue Metformin every morning. Reduce sugar and rice in diet.
+  Online  | red_flags  : ['Fasting blood sugar of 180 mg/dL indicating poor glycemic control']
+  Offline | complaint  : Fasting blood pressure is high
+  Offline | symptoms   : ['high fasting blood pressure']
+  Offline | diagnosis  : []
+  Offline | medications: ['Metzin']
+  Offline | duration   : unknown
+  Offline | treatment  : Order a follow-up blood pressure check and review diet plan with patient.
+  Offline | red_flags  : ['high fasting blood pressure']
+
+Clip 4: Cough and TB concern
+  Online  | complaint  : Cough with blood in sputum
+  Online  | symptoms   : ['Cough', {'text': 'Hemoptysis (blood in sputum)', 'potentially_hallucinated': True}]
+  Online  | diagnosis  : [{'text': 'Suspected Tuberculosis (TB) - to be confirmed', 'potentially_hallucinated': True}]
+  Online  | medications: []
+  Online  | duration   : Two weeks
+  Online  | treatment  : Chest X-ray and sputum test to be performed for further evaluation and diagnosis
+  Online  | red_flags  : ['Hemoptysis (blood in sputum)', 'Contact with a known TB patient (neighbor)']
+  Offline | complaint  : blood
+  Offline | symptoms   : ['blood']
+  Offline | diagnosis  : []
+  Offline | medications: []
+  Offline | duration   : two weeks
+  Offline | treatment  : 
+  Offline | red_flags  : []
+
+Clip 5: Stomach pain and vomiting
+  Online  | complaint  : Stomach pain and vomiting with diarrhea
+  Online  | symptoms   : ['Stomach pain', 'Vomiting', 'Diarrhea']
+  Online  | diagnosis  : ['Food poisoning']
+  Online  | medications: ['ORS (Oral Rehydration Solution)']
+  Online  | duration   : Since yesterday (approximately 1 day)
+  Online  | treatment  : Keep drinking ORS (Oral Rehydration Solution) to maintain hydration.
+  Online  | red_flags  : []
+  Offline | complaint  : stomach discomfort and diarrhea
+  Offline | symptoms   : ['stomach discomfort', 'diarrhea']
+  Offline | diagnosis  : []
+  Offline | medications: []
+  Offline | duration   : starting from tomorrow evening
+  Offline | treatment  : Further investigation and consultation with a gastroenterologist is recommended.
+  Offline | red_flags  : []
+
+Clip 6: Joint pain
+  Online  | complaint  : Pain in both knees with difficulty climbing stairs
+  Online  | symptoms   : ['Bilateral knee pain', 'Difficulty climbing stairs']
+  Online  | diagnosis  : ['Possible arthritis (age-related)']
+  Online  | medications: []
+  Online  | duration   : 3 months
+  Online  | treatment  : X-ray and blood tests ordered for further evaluation
+  Online  | red_flags  : []
+  Offline | complaint  : pain in both knees
+  Offline | symptoms   : ['pain in both knees']
+  Offline | diagnosis  : []
+  Offline | medications: []
+  Offline | duration   : three months
+  Offline | treatment  : 
+  Offline | red_flags  : []
+
+=================================================================
+NOTES
+=================================================================
+Completeness = fraction of 8 required fields that are non-empty.
+Latency does not include Whisper (identical for both modes).
+Offline mode requires vLLM server running with VLLM_MODEL loaded.
+Online mode quality reflects Claude's Hindi medical knowledge.
