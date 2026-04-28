@@ -32,7 +32,7 @@ Audio (Hindi MP3/WAV)
       ↓  Hindi transcript with word-level timestamps
 [Translation]             Online: Claude API  |  Offline: Helsinki-NLP/opus-mt-hi-en
       ↓  English transcript
-[Entity Extraction]       Online: Claude API  |  Offline: Qwen2.5-7B-Instruct via vLLM
+[Entity Extraction]       Online: Claude API  |  Offline: Qwen2.5:3B via Ollama
       ↓  {chief_complaint, symptoms, diagnosis, medications, treatment_plan, red_flags}
 [ICD-10 + SNOMED APIs]   runtime lookup — no hardcoded codes
       ↓  [{term, icd10, snomed, confidence}]
@@ -48,9 +48,9 @@ Audio (Hindi MP3/WAV)
 | | Online | Offline |
 |---|---|---|
 | **Translation** | Claude API | Helsinki-NLP/opus-mt-hi-en (MarianMT) |
-| **Entity extraction** | Claude API | Qwen2.5-7B-Instruct via local vLLM server |
+| **Entity extraction** | Claude API | Qwen2.5:3B via Ollama (local) |
 | **Internet required** | Yes (Anthropic API) | No (fully local) |
-| **Setup** | Just an API key | vLLM server + model download |
+| **Setup** | Just an API key | Ollama + model pull |
 | **Use case** | Default / clinic with internet | Rural deployment, air-gapped |
 
 Toggle between modes using the switch in the top-right of the UI.
@@ -102,8 +102,9 @@ clinscribe/
 
 - Python 3.10+
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for OpenMRS)
-- FFmpeg (for audio conversion) — install via `winget install ffmpeg` on Windows
-- GPU recommended (CUDA 11.8+) — CPU works but transcription takes longer
+- [Ollama](https://ollama.com/download) (for offline mode entity extraction)
+- FFmpeg — `winget install ffmpeg` on Windows, `brew install ffmpeg` on macOS
+- GPU recommended (CUDA 11.8+) — CPU works but transcription is slow
 - Microsoft C++ Build Tools (Windows only, required for some packages)
 
 ---
@@ -162,9 +163,9 @@ WHISPER_LANGUAGE=hi
 # Claude model
 ANTHROPIC_MODEL=claude-sonnet-4-6
 
-# Offline mode — vLLM server
-VLLM_BASE_URL=http://localhost:8001/v1
-VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct
+# Offline mode — Ollama server
+VLLM_BASE_URL=http://localhost:11434/v1
+VLLM_MODEL=qwen2.5:3b
 ```
 
 ### 4. Start OpenMRS
@@ -175,12 +176,12 @@ docker compose up -d
 
 Wait ~2 minutes for startup. Visit `http://localhost/openmrs` to confirm it is running.
 
-Enable Basic Auth for REST API access (one-time):
+Enable Basic Auth for REST API access (one-time, first run only):
 ```bash
 docker compose exec db mysql -u openmrs -popenmrs openmrs < enable_basic_auth.sql
 ```
 
-### 5. Run the server
+### 5. Run ClinScribe
 
 ```bash
 uvicorn review_ui.app:app --host 0.0.0.0 --port 8000
@@ -188,7 +189,7 @@ uvicorn review_ui.app:app --host 0.0.0.0 --port 8000
 
 Open `http://localhost:8000`
 
-> **Note:** Do not use `--reload` — watchfiles monitors the entire directory including `.venv`, causing constant restarts. If you need reload, use `--reload-exclude ".venv"`.
+> **Note:** Do not use `--reload` — watchfiles monitors the entire directory including `.venv`, causing constant restarts.
 
 ---
 
@@ -198,21 +199,33 @@ Offline mode requires two extra components:
 
 ### Translation model (auto-downloads on first use)
 
-`Helsinki-NLP/opus-mt-hi-en` downloads automatically from HuggingFace (~300MB) when you first run in offline mode. No account needed.
+`Helsinki-NLP/opus-mt-hi-en` downloads automatically from HuggingFace (~300MB) on first offline run. No account needed.
 
-### vLLM server for entity extraction
+### Ollama for entity extraction
 
-1. Install vLLM (Linux/WSL recommended):
+Offline entity extraction runs via [Ollama](https://ollama.com/download), which works natively on Windows, macOS, and Linux.
+
+> **Why Ollama, not vLLM?** vLLM requires `uvloop` which is Linux-only and will not start on Windows. Ollama exposes the same OpenAI-compatible API and works on all platforms.
+
+1. Install Ollama from [ollama.com/download](https://ollama.com/download)
+
+2. Pull the model (~2GB):
    ```bash
-   pip install vllm
+   ollama pull qwen2.5:3b
    ```
-2. Start the server:
+
+3. Set these in `.env`:
+   ```env
+   VLLM_BASE_URL=http://localhost:11434/v1
+   VLLM_MODEL=qwen2.5:3b
+   ```
+
+4. Start Ollama before running ClinScribe:
    ```bash
-   python -m vllm.entrypoints.openai.api_server \
-     --model Qwen/Qwen2.5-7B-Instruct \
-     --port 8001
+   ollama serve
    ```
-3. Set `VLLM_BASE_URL=http://localhost:8001/v1` in `.env`
+
+Then start ClinScribe normally and flip the **Offline** toggle in the UI header.
 
 ---
 
@@ -351,7 +364,7 @@ Response:
 
 ## Mode evaluation: Online vs Offline
 
-Benchmarked on all 6 Hindi clinical audio clips using the same Whisper transcription. Latency excludes Whisper (identical for both modes).
+Benchmarked on all 6 Hindi clinical audio clips using the same Whisper transcription. Latency excludes Whisper (identical for both modes). Offline mode uses MarianMT (translation) + Qwen2.5:3B via Ollama (extraction).
 
 ### Entity completeness
 
