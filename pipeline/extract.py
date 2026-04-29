@@ -120,23 +120,28 @@ def _validate_and_coerce(data: dict) -> dict:
 
 
 def _check_hallucinations(entities: dict, transcript: str) -> dict:
-    """
-    What it does: Flags extracted symptoms/diagnoses not grounded in the transcript text.
-    Inputs: entities — extracted dict; transcript — original Hindi transcript
-    Outputs: entities dict with "potentially_hallucinated": True added to suspect items
-    Dependencies: None
-    Side effects: Logs warning for each flagged item
-    Failure modes: None
-    """
     transcript_lower = transcript.lower()
-
     for field in ("symptoms", "diagnosis"):
         flagged = []
         for item in entities.get(field, []):
             if isinstance(item, str):
-                words = [w for w in item.lower().split() if w not in _STOP_WORDS]
-                grounded = any(w in transcript_lower for w in words if len(w) > 2)
-                if not grounded and words:
+                # "A / B" alternatives: check each independently
+                alternatives = re.split(r'\s*/\s*', item)
+                grounded = False
+                for alt in alternatives:
+                    # Strip clinical prefixes before word-matching
+                    alt_clean = re.sub(
+                        r'^(denies|possible|suspected|rule\s+out|r/o)\s*:?\s*', '',
+                        alt, flags=re.IGNORECASE
+                    ).strip()
+                    words = [
+                        w.strip('.,;:()') for w in alt_clean.lower().split()
+                        if w.strip('.,;:()') not in _STOP_WORDS and len(w.strip('.,;:()')) > 2
+                    ]
+                    if any(w in transcript_lower for w in words):
+                        grounded = True
+                        break
+                if not grounded and item.strip():
                     logger.warning(f"Possible hallucination in {field}: '{item}'")
                     flagged.append({"text": item, "potentially_hallucinated": True})
                 else:
@@ -144,7 +149,6 @@ def _check_hallucinations(entities: dict, transcript: str) -> dict:
             else:
                 flagged.append(item)
         entities[field] = flagged
-
     return entities
 
 
@@ -165,7 +169,9 @@ def _call_claude(transcript: str, retry_msg: str | None = None) -> tuple[dict, o
     response = _client.messages.create(
         model=config.ANTHROPIC_MODEL,
         max_tokens=1024,
-        system=_SYSTEM_PROMPT,
+        # Ephemeral cache on the fixed system prompt — saves input tokens and
+        # ~200ms on every call after the first within a 5-minute window.
+        system=[{"type": "text", "text": _SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_content}],
     )
     latency_ms = (time.monotonic() - t0) * 1000

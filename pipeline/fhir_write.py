@@ -4,6 +4,8 @@ All writes go to local OpenMRS only — writing to external systems risks data i
 """
 
 import logging
+import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 import requests
@@ -34,6 +36,25 @@ _ACT_CODE_SYSTEM = "http://terminology.hl7.org/CodeSystem/v3-ActCode"
 _OPENMRS_ENCOUNTER_TYPE_SYSTEM = "http://fhir.openmrs.org/code-system/encounter-type"
 # OpenMRS "Consultation" encounter type UUID — fixed per OpenMRS Reference Application schema
 _CONSULTATION_ENCOUNTER_TYPE_UUID = "dd528487-82a5-4082-9c72-ed246bd49591"
+
+# Human-readable names used to search for vital sign concepts in OpenMRS.
+# Looked up by name at runtime — no hardcoded UUIDs, so works regardless of
+# which concept dictionary (CIEL, MVP, custom) is loaded in the instance.
+_VITAL_NAMES: dict[str, str] = {
+    "bp_systolic":      "Systolic blood pressure",
+    "bp_diastolic":     "Diastolic blood pressure",
+    "heart_rate":       "Pulse",
+    "temperature":      "Temperature (C)",
+    "weight_kg":        "Weight (kg)",
+    "height_cm":        "Height (cm)",
+    "spo2":             "Arterial blood oxygen saturation (pulse oximeter)",
+    "respiratory_rate": "Respiratory rate",
+}
+
+_VISIT_NOTE_NAME = "Visit Note"
+
+# Runtime cache: concept name → UUID (populated on first use, avoids repeated searches)
+_concept_uuid_cache: dict[str, str] = {}
 
 
 def verify_openmrs_connection() -> bool:
@@ -376,11 +397,182 @@ def _post_condition_rest(
     return resp
 
 
+def _resolve_concept_by_name(
+    name: str,
+    datatype: str = "Numeric",
+    session: requests.Session | None = None,
+) -> str | None:
+    """
+    Returns the OpenMRS concept UUID for a given display name.
+    Checks the in-process cache first, then searches OpenMRS, then creates the concept.
+    Works with any concept dictionary — no hardcoded UUIDs.
+    """
+    if name in _concept_uuid_cache:
+        return _concept_uuid_cache[name]
+
+    url = f"{config.OPENMRS_BASE_URL}/ws/rest/v1/concept"
+    requester = session or requests
+    kwargs: dict = {"timeout": 5}
+    if session is None:
+        kwargs["auth"] = (config.OPENMRS_USER, config.OPENMRS_PASSWORD)
+
+    # Search by name
+    try:
+        resp = requester.get(url, params={"q": name, "limit": 10, "v": "full"}, **kwargs)
+        for result in resp.json().get("results", []):
+            display = result.get("name", {}).get("display", "") or result.get("display", "")
+            if display.lower() == name.lower():
+                uuid = result["uuid"]
+                _concept_uuid_cache[name] = uuid
+                logger.info(f"[concept] '{name}' → {uuid}")
+                return uuid
+    except Exception as e:
+        logger.warning(f"[concept] Search failed for '{name}': {e}")
+
+    # Not found — create it so vitals/notes always save
+    datatype_uuid = _get_concept_ref("conceptdatatype", datatype, session=session)
+    class_name = "Finding" if datatype == "Text" else "Misc"
+    class_uuid = _get_concept_ref("conceptclass", class_name, session=session)
+    payload = {
+        "names": [{"name": name, "locale": "en", "localePreferred": True, "conceptNameType": "FULLY_SPECIFIED"}],
+        "datatype": datatype_uuid,
+        "conceptClass": class_uuid,
+    }
+    try:
+        resp = requester.post(url, json=payload,
+                              headers={"Content-Type": "application/json"}, **kwargs)
+        if resp.status_code in (200, 201):
+            uuid = resp.json().get("uuid")
+            _concept_uuid_cache[name] = uuid
+            logger.warning(f"[concept] Created '{name}' ({datatype}) → {uuid}")
+            return uuid
+        logger.warning(f"[concept] Create failed for '{name}': {resp.status_code} {resp.text[:200]}")
+    except Exception as e:
+        logger.warning(f"[concept] Create error for '{name}': {e}")
+
+    return None
+
+
+def _post_obs_rest(
+    concept_uuid: str,
+    value,
+    patient_uuid: str,
+    encounter_uuid: str,
+    session: requests.Session | None = None,
+) -> bool:
+    """POSTs a single Observation via REST v1. Returns True on success."""
+    url = f"{config.OPENMRS_BASE_URL}/ws/rest/v1/obs"
+    payload = {
+        "person": patient_uuid,
+        "concept": concept_uuid,
+        "value": value,
+        "obsDatetime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "encounter": encounter_uuid,
+    }
+    requester = session or requests
+    kwargs: dict = {
+        "json": payload,
+        "headers": {"Content-Type": "application/json", "Accept": "application/json"},
+        "timeout": 15,
+    }
+    if session is None:
+        kwargs["auth"] = (config.OPENMRS_USER, config.OPENMRS_PASSWORD)
+    try:
+        resp = requester.post(url, **kwargs)
+        if resp.status_code not in (200, 201):
+            logger.warning(f"[obs] POST {concept_uuid} failed {resp.status_code}: {resp.text[:200]}")
+            return False
+        return True
+    except Exception as e:
+        logger.warning(f"[obs] POST {concept_uuid} error: {e}")
+        return False
+
+
+def _post_vitals(
+    vitals: dict,
+    patient_uuid: str,
+    encounter_uuid: str,
+    session: requests.Session | None = None,
+) -> dict:
+    """Posts each non-empty vital as a numeric Observation. Looks up concept by name at runtime."""
+    saved, failed = [], []
+    for key, display_name in _VITAL_NAMES.items():
+        raw = vitals.get(key)
+        if raw is None or raw == "":
+            continue
+        try:
+            value = float(raw)
+        except (ValueError, TypeError):
+            logger.warning(f"[vitals] Skipping {key} — cannot convert '{raw}' to float")
+            continue
+        concept_uuid = _resolve_concept_by_name(display_name, datatype="Numeric", session=session)
+        if not concept_uuid:
+            logger.warning(f"[vitals] No concept found for '{display_name}', skipping")
+            failed.append(key)
+            continue
+        ok = _post_obs_rest(concept_uuid, value, patient_uuid, encounter_uuid, session)
+        (saved if ok else failed).append(key)
+    return {"saved": saved, "failed": failed}
+
+
+_MEDICATION_CONCEPT_NAME = "Medication noted"
+
+
+def _post_medications(
+    medications: list[str],
+    patient_uuid: str,
+    encounter_uuid: str,
+    session: requests.Session | None = None,
+) -> dict:
+    """
+    Posts medications as a single Text Observation (one per encounter).
+    FHIR MedicationRequest is not supported by all OpenMRS deployments.
+    Using the REST v1 obs endpoint with a 'Medication noted' Text concept
+    is consistent with how clinical notes are saved and works on all instances.
+    """
+    meds = [m.strip() for m in medications if str(m).strip()]
+    if not meds:
+        return {"saved": [], "failed": []}
+
+    med_text = "\n".join(f"- {m}" for m in meds)
+    concept_uuid = _resolve_concept_by_name(
+        _MEDICATION_CONCEPT_NAME, datatype="Text", session=session
+    )
+    if not concept_uuid:
+        logger.warning(f"[medication] No concept UUID for '{_MEDICATION_CONCEPT_NAME}', skipping")
+        return {"saved": [], "failed": meds}
+
+    ok = _post_obs_rest(concept_uuid, med_text, patient_uuid, encounter_uuid, session)
+    if ok:
+        logger.info(f"[medication] Saved {len(meds)} medication(s) as observation")
+        return {"saved": meds, "failed": []}
+    else:
+        return {"saved": [], "failed": meds}
+
+
+def _post_clinical_note(
+    note: str,
+    patient_uuid: str,
+    encounter_uuid: str,
+    session: requests.Session | None = None,
+) -> bool:
+    """Posts the visit note as a Text Observation. Looks up the concept by name at runtime."""
+    if not note or not note.strip():
+        return True
+    concept_uuid = _resolve_concept_by_name(_VISIT_NOTE_NAME, datatype="Text", session=session)
+    if not concept_uuid:
+        logger.warning("[note] No concept found for Visit Note, skipping")
+        return False
+    return _post_obs_rest(concept_uuid, note.strip(), patient_uuid, encounter_uuid, session)
+
+
 def write_encounter_and_conditions(
     patient_uuid: str,
     entities: dict,
     mapped_codes: list,
     session: requests.Session | None = None,
+    vitals: dict | None = None,
+    clinical_notes: str | None = None,
 ) -> dict:
     """
     Posts one Encounter (via FHIR R4) and one Condition per diagnosis (via REST v1) to OpenMRS.
@@ -441,10 +633,36 @@ def write_encounter_and_conditions(
             logger.error(f"Failed to save Condition '{term}': {e}")
             conditions_failed.append({"term": term, "error": str(e)})
 
-    status = "success" if not conditions_failed else "partial"
+    # Steps 3-5 are independent after the encounter exists — run in parallel.
+    # The session is shared across threads; this is safe here because all three
+    # requests are POST-only and OpenMRS does not send Set-Cookie on obs writes.
+    raw_meds = entities.get("medications_mentioned", [])
+    medication_names = [m if isinstance(m, str) else m.get("text", str(m)) for m in raw_meds]
+
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        f_vitals = ex.submit(_post_vitals, vitals or {}, patient_uuid, encounter_uuid, session)
+        f_note   = ex.submit(_post_clinical_note, clinical_notes or "", patient_uuid, encounter_uuid, session)
+        f_meds   = ex.submit(_post_medications, medication_names, patient_uuid, encounter_uuid, session)
+        vitals_result = f_vitals.result()
+        note_saved    = f_note.result()
+        med_result    = f_meds.result()
+
+    if vitals_result["failed"]:
+        logger.warning(f"[vitals] Failed to save: {vitals_result['failed']}")
+    if clinical_notes and not note_saved:
+        logger.warning("[note] Clinical note failed to save")
+    if med_result["failed"]:
+        logger.warning(f"[medication] Failed to save: {med_result['failed']}")
+
+    status = "success" if not (conditions_failed or med_result["failed"]) else "partial"
     return {
         "success": status,
         "encounter_uuid": encounter_uuid,
         "conditions_saved": conditions_saved,
         "conditions_failed": conditions_failed,
+        "vitals_saved": vitals_result["saved"],
+        "vitals_failed": vitals_result["failed"],
+        "note_saved": note_saved,
+        "medications_saved": med_result["saved"],
+        "medications_failed": med_result["failed"],
     }

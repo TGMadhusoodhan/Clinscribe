@@ -88,7 +88,12 @@ async def health():
     except Exception:
         whisper_loaded = False
 
-    return {"status": "ok", "openmrs_reachable": openmrs_ok, "whisper_loaded": whisper_loaded}
+    return {
+        "status": "ok",
+        "openmrs_reachable": openmrs_ok,
+        "whisper_loaded": whisper_loaded,
+        "openmrs_spa_url": config.OPENMRS_SPA_URL,
+    }
 
 
 # ── OpenMRS session (OpenMRS 3 disables Basic Auth; use session cookie instead) ──
@@ -324,6 +329,8 @@ class ApproveRequest(BaseModel):
     patient_uuid: str
     edited_entities: dict
     mapped_codes: list
+    vitals: dict = {}
+    clinical_notes: str = ""
 
 
 @app.post("/approve")
@@ -345,6 +352,8 @@ async def approve_and_write(req: ApproveRequest):
             entities=req.edited_entities,
             mapped_codes=req.mapped_codes,
             session=_openmrs_session(),
+            vitals=req.vitals,
+            clinical_notes=req.clinical_notes,
         )
         return result
     except OpenMRSUnavailableError as e:

@@ -408,6 +408,10 @@
     .ts { font-family: var(--mono); font-size: .72rem; color: var(--text-3); white-space: nowrap; }
     .hindi-text { font-family: var(--hindi); }
     td[contenteditable]:focus { background: #f0fdf9; outline: none; border-radius: 2px; }
+    .diag-term[contenteditable]:focus { background: #f0fdf9; outline: 1px solid var(--teal); border-radius: 3px; padding: 1px 3px; }
+    .pill-add-row { display:flex; gap:.5rem; margin-top:.5rem; }
+    .btn-add-pill { padding:.4rem .9rem; background:var(--teal); color:#fff; border:none; border-radius:var(--radius); font-size:.85rem; cursor:pointer; white-space:nowrap; }
+    .btn-add-pill:hover { opacity:.88; }
 
     /* ── Field rows ──────────────────────────────────────────────────── */
     .fields { display: flex; flex-direction: column; gap: 1.1rem; }
@@ -623,7 +627,13 @@
         </div>
         <div id="selected-patient" class="selected-patient hidden">
           <span id="patient-display"></span>
-          <button class="btn-link" id="clear-patient">change</button>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-shrink:0;">
+            <a id="openmrs-patient-link" href="#" target="_blank" class="btn-link"
+               style="color:var(--teal);font-size:.75rem;" title="Open patient chart in OpenMRS">
+              OpenMRS ↗
+            </a>
+            <button class="btn-link" id="clear-patient">change</button>
+          </div>
         </div>
       </div>
 
@@ -752,6 +762,10 @@
                 <span id="halluc-note" class="hidden" style="font-weight:400;letter-spacing:0;text-transform:none;font-size:.7rem;color:var(--amber)">⚠ amber = AI flagged, verify</span>
               </label>
               <div class="pills" id="symptoms-pills"></div>
+              <div class="pill-add-row">
+                <input id="add-symptom-input" class="finput" style="flex:1;padding:.4rem .7rem;font-size:.85rem;" placeholder="Add a symptom…">
+                <button id="add-symptom-btn" type="button" class="btn-add-pill">Add</button>
+              </div>
             </div>
 
             <div class="field">
@@ -775,16 +789,80 @@
             <div class="field">
               <label class="flabel">Medications</label>
               <div class="pills" id="medications-pills"></div>
+              <div class="pill-add-row">
+                <input id="add-medication-input" class="finput" style="flex:1;padding:.4rem .7rem;font-size:.85rem;" placeholder="Add a medication…">
+                <button id="add-medication-btn" type="button" class="btn-add-pill">Add</button>
+              </div>
             </div>
 
-            <div id="red-flags-wrap" class="hidden">
+            <div id="red-flags-wrap">
               <div class="red-flags">
                 <p class="red-flags-title">⚠ Red Flags — Requires Immediate Attention</p>
-                <div id="red-flags-list"></div>
+                <div class="pills" id="red-flags-pills" style="margin-bottom:.6rem;"></div>
+                <div class="pill-add-row">
+                  <input id="add-redflag-input" class="finput" style="flex:1;padding:.4rem .7rem;font-size:.85rem;background:rgba(255,255,255,.75);color:var(--text);" placeholder="Add a red flag…">
+                  <button id="add-redflag-btn" type="button" class="btn-add-pill" style="background:var(--amber);">Add</button>
+                </div>
               </div>
             </div>
 
           </div>
+        </div>
+      </div>
+
+      <!-- Vitals -->
+      <div class="card reveal" id="vitals-card">
+        <div class="card-head">
+          <span class="card-title">Vitals</span>
+          <span class="card-chip">Leave blank to skip — filled fields upload to OpenMRS</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <div class="field">
+              <label class="flabel">Systolic BP (mmHg)</label>
+              <input type="number" id="v-bp-sys" class="finput" placeholder="e.g. 120">
+            </div>
+            <div class="field">
+              <label class="flabel">Diastolic BP (mmHg)</label>
+              <input type="number" id="v-bp-dia" class="finput" placeholder="e.g. 80">
+            </div>
+            <div class="field">
+              <label class="flabel">Heart Rate (bpm)</label>
+              <input type="number" id="v-hr" class="finput" placeholder="e.g. 72">
+            </div>
+            <div class="field">
+              <label class="flabel">Temperature (°C)</label>
+              <input type="number" step="0.1" id="v-temp" class="finput" placeholder="e.g. 37.0">
+            </div>
+            <div class="field">
+              <label class="flabel">Weight (kg)</label>
+              <input type="number" step="0.1" id="v-weight" class="finput" placeholder="e.g. 70">
+            </div>
+            <div class="field">
+              <label class="flabel">Height (cm)</label>
+              <input type="number" id="v-height" class="finput" placeholder="e.g. 170">
+            </div>
+            <div class="field">
+              <label class="flabel">O₂ Saturation (%)</label>
+              <input type="number" id="v-spo2" class="finput" placeholder="e.g. 98">
+            </div>
+            <div class="field">
+              <label class="flabel">Respiratory Rate (/min)</label>
+              <input type="number" id="v-rr" class="finput" placeholder="e.g. 16">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical Notes -->
+      <div class="card reveal" id="notes-card">
+        <div class="card-head">
+          <span class="card-title">Clinical Notes</span>
+          <span class="card-chip">Pre-filled from transcript · uploads as Visit Note</span>
+        </div>
+        <div class="card-body">
+          <textarea id="clinical-notes" class="finput" rows="6"
+            placeholder="Clinical notes will be pre-filled from the English transcript after transcription…"></textarea>
         </div>
       </div>
 
@@ -815,8 +893,15 @@
           </div>
 
           <p class="approve-notice">
-            Doctor review required. Clicking Approve writes a permanent FHIR R4 Encounter and Condition resources to this patient's OpenMRS record. This action cannot be undone.
+            Doctor review required. Clicking Approve writes a permanent FHIR R4 Encounter, Conditions, and MedicationRequests to this patient's OpenMRS record. This action cannot be undone.
           </p>
+
+          <label id="review-confirm-label" style="display:flex;align-items:flex-start;gap:.65rem;cursor:pointer;padding:.75rem .9rem;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border);">
+            <input type="checkbox" id="review-confirm-cb" style="margin-top:3px;accent-color:var(--teal);flex-shrink:0;">
+            <span style="font-size:.82rem;color:var(--text-2);line-height:1.55;">
+              I have reviewed and verified all diagnoses, medications, vitals, and clinical notes above. I authorise writing this encounter permanently to the patient's OpenMRS record.
+            </span>
+          </label>
 
           <button id="approve-btn" class="btn-approve" disabled>
             Approve &amp; Save to OpenMRS
@@ -840,6 +925,7 @@ const state = {
   data: null,           // full /transcribe response
   approved: false,
   mode: 'online',       // 'online' | 'offline'
+  openmrsSpaUrl: 'http://localhost/openmrs/spa',
 };
 
 // ── Mode toggle ─────────────────────────────────────────────────────────────
@@ -863,6 +949,7 @@ function setMode(m) {
     const r = await fetch('/health');
     const d = await r.json();
     dot.classList.remove('loading');
+    if (d.openmrs_spa_url) state.openmrsSpaUrl = d.openmrs_spa_url;
     if (d.openmrs_reachable) {
       dot.classList.add('ok');
       text.textContent = 'OpenMRS connected';
@@ -912,12 +999,19 @@ async function fetchPatients(q) {
 }
 
 function selectPatient(uuid, display) {
+  // If switching to a different patient, wipe the previous transcription.
+  // Leaving stale state.data means the Approve button can re-enable and
+  // write Patient A's diagnoses into Patient B's record — patient safety bug.
+  if (state.patient && state.patient.uuid !== uuid) {
+    _resetTranscriptionState();
+  }
   state.patient = { uuid, display };
   document.getElementById('patient-display').textContent = display;
+  const link = document.getElementById('openmrs-patient-link');
+  if (link) link.href = `${state.openmrsSpaUrl}/patient/${uuid}/chart`;
   show('selected-patient', 'flex');
   hide('patient-results');
   document.getElementById('patient-search').value = '';
-  // Activate step 1 number
   document.getElementById('s1-num').className = 'step-num done';
   updateApproveSummary();
   updateApproveBtn();
@@ -927,8 +1021,24 @@ document.getElementById('clear-patient').addEventListener('click', () => {
   state.patient = null;
   hide('selected-patient');
   document.getElementById('s1-num').className = 'step-num active';
+  _resetTranscriptionState();
   updateApproveBtn();
 });
+
+function _resetTranscriptionState() {
+  state.data     = null;
+  state.approved = false;
+  const cb = document.getElementById('review-confirm-cb');
+  if (cb) cb.checked = false;
+  hide('results');
+  hide('loading-state');
+  show('empty-state', 'flex');
+  document.getElementById('transcribe-btn').disabled = !state.audioFile;
+  document.getElementById('approve-result').classList.add('hidden');
+  const approveBtn = document.getElementById('approve-btn');
+  approveBtn.disabled = true;
+  approveBtn.textContent = 'Approve & Save to OpenMRS';
+}
 
 // ── Audio upload ───────────────────────────────────────────────────────────
 const dropZone  = document.getElementById('drop-zone');
@@ -1063,10 +1173,17 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
     if (!r.ok) throw new Error(d.detail?.detail || d.detail || r.statusText);
 
     state.data = d;
+    state.approved = false;
+    const cb = document.getElementById('review-confirm-cb');
+    if (cb) cb.checked = false;
+    // Clear vitals so previous patient's readings don't carry over silently
+    ['v-bp-sys','v-bp-dia','v-hr','v-temp','v-weight','v-height','v-spo2','v-rr']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     finalizePipelineAnimation(d.processing_time_seconds);
 
     renderTranscript(d);
     renderSummary(d);
+    prefillNotes(d);
     updateApproveSummary();
 
     hide('loading-state');
@@ -1125,13 +1242,12 @@ function renderSummary(data) {
   renderDiagnoses(data.mapped_codes || []);
 
   const redFlags = e.red_flags || [];
-  if (redFlags.length) {
-    show('red-flags-wrap');
-    document.getElementById('red-flags-list').innerHTML =
-      redFlags.map(f => `<div class="red-flag-item">${esc(typeof f === 'object' ? f.text : f)}</div>`).join('');
-  } else {
-    hide('red-flags-wrap');
-  }
+  const rfContainer = document.getElementById('red-flags-pills');
+  rfContainer.innerHTML = '';
+  redFlags.forEach(f => {
+    const text = typeof f === 'object' ? (f.text || String(f)) : String(f);
+    addPillTo('red-flags-pills', text, true);
+  });
 }
 
 function renderPills(containerId, items) {
@@ -1169,6 +1285,8 @@ function renderPills(containerId, items) {
 function renderDiagnoses(mappedCodes) {
   const container = document.getElementById('diagnoses-list');
   container.innerHTML = '';
+  // Always clear manually-added diagnoses from the previous patient/transcription
+  document.getElementById('manual-diagnoses-list').innerHTML = '';
   if (!mappedCodes.length) {
     container.innerHTML = '<p style="font-size:.82rem;color:var(--text-3)">No diagnoses extracted.</p>';
     return;
@@ -1190,7 +1308,7 @@ function renderDiagnoses(mappedCodes) {
     card.innerHTML = `
       <span class="conf-dot ${conf}" title="${confTip}"></span>
       <div class="diag-body">
-        <div class="diag-term">${esc(mc.term)}</div>
+        <div class="diag-term" contenteditable="true" spellcheck="false" title="Click to edit diagnosis term">${esc(mc.term)}</div>
         <div class="diag-codes">${badges}</div>
         ${desc}
         ${conf === 'low' ? '<div class="diag-note">⚠ Low confidence — manually verify codes before approving</div>' : ''}
@@ -1226,9 +1344,12 @@ function abbrev(str, max) {
 
 // ── Approve ────────────────────────────────────────────────────────────────
 function updateApproveBtn() {
+  const reviewed = document.getElementById('review-confirm-cb')?.checked || false;
   document.getElementById('approve-btn').disabled =
-    !(state.patient && state.data && !state.approved);
+    !(state.patient && state.data && !state.approved && reviewed);
 }
+
+document.getElementById('review-confirm-cb').addEventListener('change', updateApproveBtn);
 
 function addManualDiagnosis() {
   const input = document.getElementById('manual-diag-input');
@@ -1249,24 +1370,35 @@ document.getElementById('manual-diag-btn').addEventListener('click', addManualDi
 document.getElementById('manual-diag-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addManualDiagnosis(); } });
 
 document.getElementById('approve-btn').addEventListener('click', async () => {
-  const name = state.patient?.display || 'this patient';
-  const diagCount = (state.data?.mapped_codes || []).length;
-  if (!confirm(`Save clinical notes for ${name} to OpenMRS?\n\n${diagCount} diagnosis/diagnoses will be written as permanent FHIR R4 Condition records.\n\nPlease verify the summary above before proceeding.`)) return;
+  const diagTerms = [
+    ...document.querySelectorAll('#diagnoses-list .diag-term'),
+    ...document.querySelectorAll('#manual-diagnoses-list .manual-diag-term'),
+  ].map(el => el.textContent.trim()).filter(Boolean);
+
+  if (diagTerms.length === 0) {
+    if (!confirm('No diagnoses have been added to this encounter.\n\nAre you sure you want to save without any diagnosis?')) return;
+  }
 
   const btn = document.getElementById('approve-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Saving to OpenMRS…';
 
+  const _approveAbort = new AbortController();
+  const _approveTimeout = setTimeout(() => _approveAbort.abort(), 60000); // 60s hard timeout
   try {
     const r = await fetch('/approve', {
       method: 'POST',
+      signal: _approveAbort.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         patient_uuid: state.patient.uuid,
         edited_entities: gatherEditedEntities(),
         mapped_codes: state.data.mapped_codes || [],
+        vitals: gatherVitals(),
+        clinical_notes: document.getElementById('clinical-notes').value.trim(),
       }),
     });
+    clearTimeout(_approveTimeout);
     const d = await r.json();
     if (!r.ok) throw new Error(d.detail || r.statusText);
 
@@ -1290,15 +1422,25 @@ document.getElementById('approve-btn').addEventListener('click', async () => {
           <div class="failed-list">${failedHtml}</div>
         </div>`;
     } else {
+      const vitalsInfo = d.vitals_saved?.length
+        ? ` · ${d.vitals_saved.length} vital(s) saved` : '';
+      const noteInfo = d.note_saved ? ' · visit note saved' : '';
+      const patientUrl = `${state.openmrsSpaUrl}/patient/${state.patient.uuid}/chart`;
       resultEl.innerHTML = `
         <div class="banner success">
           Saved. Encounter: <strong>${d.encounter_uuid}</strong>
-          · ${d.conditions_saved} condition(s) written.
+          · ${d.conditions_saved} condition(s)${vitalsInfo}${noteInfo} written.
+          <br><a href="${patientUrl}" target="_blank"
+            style="color:var(--green);font-weight:600;text-decoration:underline;">
+            Open patient chart in OpenMRS ↗
+          </a>
         </div>`;
     }
   } catch (e) {
+    clearTimeout(_approveTimeout);
+    const msg = e.name === 'AbortError' ? 'Request timed out (60s). OpenMRS may be overloaded — try again.' : e.message;
     document.getElementById('approve-result').innerHTML =
-      `<div class="banner error">Failed: ${esc(e.message)}</div>`;
+      `<div class="banner error">Failed: ${esc(msg)}</div>`;
     show('approve-result');
     btn.disabled = false;
     btn.textContent = 'Approve & Save to OpenMRS';
@@ -1323,10 +1465,89 @@ function gatherEditedEntities() {
                             ...[...document.querySelectorAll('#diagnoses-list .diag-term')].map(s => s.textContent.trim()),
                             ...[...document.querySelectorAll('#manual-diagnoses-list .manual-diag-term')].map(s => s.textContent.trim()),
                           ].filter(Boolean),
-    red_flags:            state.data?.entities?.red_flags || [],
+    red_flags:            [...document.querySelectorAll('#red-flags-pills .pill')].map(p =>
+                            p.childNodes[0]?.textContent?.trim() || p.textContent.replace('×','').trim()
+                          ).filter(Boolean),
     raw_language:         'hi',
   };
 }
+
+// ── Notes pre-fill ─────────────────────────────────────────────────────────
+function prefillNotes(data) {
+  const englishLines = (data.segments || [])
+    .map(s => s.english_translation || '')
+    .filter(Boolean);
+  const e = data.entities || {};
+  const parts = [];
+  if (e.chief_complaint) parts.push(`Chief Complaint: ${e.chief_complaint}`);
+  if (e.history_of_present_illness) parts.push(`HPI: ${e.history_of_present_illness}`);
+  if (englishLines.length) parts.push(`\nTranscript:\n${englishLines.join(' ')}`);
+  document.getElementById('clinical-notes').value = parts.join('\n');
+}
+
+// ── Vitals gather ──────────────────────────────────────────────────────────
+function gatherVitals() {
+  const fields = {
+    bp_systolic:      'v-bp-sys',
+    bp_diastolic:     'v-bp-dia',
+    heart_rate:       'v-hr',
+    temperature:      'v-temp',
+    weight_kg:        'v-weight',
+    height_cm:        'v-height',
+    spo2:             'v-spo2',
+    respiratory_rate: 'v-rr',
+  };
+  const result = {};
+  for (const [key, id] of Object.entries(fields)) {
+    const val = document.getElementById(id)?.value.trim();
+    if (val !== '' && val != null) result[key] = parseFloat(val);
+  }
+  return result;
+}
+
+// ── Add pill helpers ───────────────────────────────────────────────────────
+function addPillTo(containerId, text, isRedFlag = false) {
+  const t = text.trim();
+  if (!t) return;
+  const container = document.getElementById(containerId);
+  const pill = document.createElement('span');
+  pill.className = 'pill';
+  if (isRedFlag) pill.style.cssText = 'background:#fef3c7;border-color:#fcd34d;color:#78350f;';
+  pill.innerHTML = `${esc(t)}<span class="pill-x">×</span>`;
+  pill.addEventListener('click', () => pill.remove());
+  container.appendChild(pill);
+}
+
+function addSymptom() {
+  const input = document.getElementById('add-symptom-input');
+  addPillTo('symptoms-pills', input.value);
+  input.value = '';
+  input.focus();
+}
+
+function addMedication() {
+  const input = document.getElementById('add-medication-input');
+  addPillTo('medications-pills', input.value);
+  input.value = '';
+  input.focus();
+}
+
+function addRedFlag() {
+  const input = document.getElementById('add-redflag-input');
+  if (!input.value.trim()) return;
+  addPillTo('red-flags-pills', input.value, true);
+  input.value = '';
+  input.focus();
+}
+
+document.getElementById('add-symptom-btn').addEventListener('click', addSymptom);
+document.getElementById('add-symptom-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSymptom(); } });
+
+document.getElementById('add-medication-btn').addEventListener('click', addMedication);
+document.getElementById('add-medication-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addMedication(); } });
+
+document.getElementById('add-redflag-btn').addEventListener('click', addRedFlag);
+document.getElementById('add-redflag-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addRedFlag(); } });
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 function formatTime(secs) {

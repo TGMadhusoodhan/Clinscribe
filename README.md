@@ -15,9 +15,9 @@ Hindi AI clinical scribe for OpenMRS. A doctor speaks in Hindi; ClinScribe trans
 3. The transcript is translated to English
 4. Claude (or a local Qwen model in offline mode) extracts structured clinical entities: chief complaint, symptoms, diagnoses, medications, treatment plan, red flags
 5. Diagnoses are mapped to ICD-10 and SNOMED-CT codes via public APIs
-6. The doctor reviews and edits all extracted data in a web UI
-7. The doctor explicitly clicks **Approve** — only then is data written to OpenMRS
-8. An FHIR R4 Encounter and Condition records are posted to the local OpenMRS instance
+6. The doctor reviews and edits all extracted data in a web UI, including vitals and clinical notes
+7. The doctor explicitly checks a confirmation checkbox and clicks **Approve** — only then is data written to OpenMRS
+8. An FHIR R4 Encounter, Condition records, vitals (Observations), and medications are posted to the local OpenMRS instance
 
 ---
 
@@ -30,15 +30,15 @@ Audio (Hindi MP3/WAV)
       ↓
 [faster-whisper large-v3] local inference, INT8 on CPU — audio never leaves the machine (HIPAA)
       ↓  Hindi transcript with word-level timestamps
-[Translation]             Online: Claude API  |  Offline: facebook/nllb-200-distilled-600M
+[Translation]             Online: Claude API  |  Offline: Ollama/qwen2.5:7b
       ↓  English transcript (translated per-segment — no truncation on long consultations)
-[Entity Extraction]       Online: Claude API  |  Offline: Qwen2.5:7B via Ollama (5-step agentic)
+[Entity Extraction]       Online: Claude API  |  Offline: Qwen2.5:7B via Ollama (single-pass)
       ↓  {chief_complaint, symptoms, diagnosis, medications, treatment_plan, red_flags}
 [ICD-10 + SNOMED APIs]   runtime lookup — no hardcoded codes
       ↓  [{term, icd10, snomed, confidence}]
-[Doctor Review UI]        editable, with hallucination flags and manual diagnosis input
-      ↓  after explicit doctor approval only
-[OpenMRS FHIR R4]        POST Encounter → POST Condition(s) via REST v1
+[Doctor Review UI]        editable, with hallucination flags, manual diagnosis input, vitals, notes
+      ↓  after explicit checkbox confirmation + doctor approval only
+[OpenMRS FHIR R4]        POST Encounter → POST Condition(s) + Vitals + Medications via REST v1
 ```
 
 ---
@@ -47,8 +47,8 @@ Audio (Hindi MP3/WAV)
 
 | | Online | Offline |
 |---|---|---|
-| **Translation** | Claude API | facebook/nllb-200-distilled-600M |
-| **Entity extraction** | Claude API | Qwen2.5:7B via Ollama (local) |
+| **Translation** | Claude API | Ollama/qwen2.5:7b |
+| **Entity extraction** | Claude API | Qwen2.5:7B via Ollama (single-pass) |
 | **Internet required** | Yes (Anthropic API) | No (fully local) |
 | **Setup** | Just an API key | Ollama + model pull |
 | **Use case** | Default / clinic with internet | Rural deployment, air-gapped |
@@ -63,14 +63,16 @@ Toggle between modes using the switch in the top-right of the UI.
 clinscribe/
 ├── pipeline/
 │   ├── transcribe.py         faster-whisper large-v3 (INT8, CPU) + silero-vad; online Claude translation
-│   ├── translate_offline.py  Offline translation via facebook/nllb-200-distilled-600M (per-segment)
-│   ├── extract.py            Online entity extraction via Claude API
-│   ├── extract_offline.py    Offline agentic extraction via Ollama (Qwen2.5:7B, 5 steps)
-│   ├── map_codes.py          ICD-10 (icd10api.com) + SNOMED-CT (ihtsdotools.org) lookup
-│   └── fhir_write.py         OpenMRS FHIR R4 Encounter + REST v1 Condition write-back
+│   ├── translate_offline.py  Offline translation via Ollama/qwen2.5:7b with Hindi medical glossary
+│   ├── extract.py            Online entity extraction via Claude API (with prompt caching)
+│   ├── extract_offline.py    Offline single-pass extraction via Ollama (qwen2.5:7b, ~3s)
+│   ├── map_codes.py          ICD-10 (local simple-icd-10-cm + rapidfuzz) + SNOMED-CT (API) lookup
+│   └── fhir_write.py         OpenMRS FHIR R4 Encounter + REST v1 Conditions + Vitals + Medications
 ├── review_ui/
 │   ├── app.py                FastAPI backend — /transcribe, /approve, /patients, /health
 │   └── static/index.html     Single-file review UI (no build step)
+├── data/
+│   └── hindi_medical_glossary.csv  80+ Hindi→English medical term pairs (Devanagari-transliterated English)
 ├── corpus/
 │   ├── generate_corpus.py    Generates 10 Hindi clinical dialogue clips via Edge TTS
 │   └── benchmark_whisper.py  Hindi vs Swahili WER benchmark
@@ -102,7 +104,7 @@ clinscribe/
 
 - Python 3.10+
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for OpenMRS)
-- [Ollama](https://ollama.com/download) (for offline mode entity extraction)
+- [Ollama](https://ollama.com/download) (for offline mode — handles both translation AND extraction)
 - FFmpeg — `winget install ffmpeg` on Windows, `brew install ffmpeg` on macOS
 - GPU recommended (CUDA 11.8+) — CPU works but transcription is slower
 - Microsoft C++ Build Tools (Windows only, required for some packages)
@@ -163,7 +165,7 @@ WHISPER_LANGUAGE=hi
 # Claude model
 ANTHROPIC_MODEL=claude-sonnet-4-6
 
-# Offline mode — Ollama server
+# Offline mode — Ollama server (used for both translation AND extraction)
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=qwen2.5:7b
 ```
@@ -195,15 +197,9 @@ Open `http://localhost:8000`
 
 ## Offline mode setup (optional)
 
-Offline mode requires two extra components:
+Offline mode uses Ollama for **both translation and entity extraction** — one model (qwen2.5:7b) handles the entire AI pipeline with no internet access. There is no separate translation model to download.
 
-### Translation model (auto-downloads on first use)
-
-`facebook/nllb-200-distilled-600M` downloads automatically from HuggingFace (~1.2GB) on first offline run. No account needed. Translations are done per-segment so long consultations are never truncated.
-
-### Ollama for entity extraction
-
-Offline entity extraction runs via [Ollama](https://ollama.com/download), which works natively on Windows, macOS, and Linux.
+### Ollama setup
 
 > **Why Ollama, not vLLM?** vLLM requires `uvloop` which is Linux-only and will not start on Windows. Ollama exposes the same OpenAI-compatible API and works on all platforms.
 
@@ -226,6 +222,10 @@ Offline entity extraction runs via [Ollama](https://ollama.com/download), which 
    ```
 
 Then start ClinScribe normally and flip the **Offline** toggle in the UI header.
+
+### Hindi medical glossary
+
+Offline translation pre-processes Devanagari-transliterated English before sending text to Ollama. Common medical terms written in Hindi script that a 7B model won't recognise from context (e.g. "ओरस" → "ORS", "फूट पॉइस्निंग" → "food poisoning") are substituted from `data/hindi_medical_glossary.csv` before translation. The glossary is a plain CSV — add rows to extend it without touching code.
 
 ### Pinning Ollama to prevent auto-updates
 
@@ -275,11 +275,14 @@ nvidia-smi
 
 ## Using the UI
 
-1. **Select mode** — Online (Claude API) or Offline (local models) using the toggle in the header
+1. **Select mode** — Online (Claude API) or Offline (local Ollama) using the toggle in the header
 2. **Select patient** — Search by name; pulls from OpenMRS patient registry
 3. **Upload audio** — MP3 or WAV recording of the Hindi consultation
-4. **Review** — Edit any extracted field; manually add diagnoses using the input below the diagnosis list
-5. **Approve** — Click "Approve & Save to OpenMRS" — this is the only step that writes to OpenMRS
+4. **Review** — Edit any extracted field; manually add diagnoses using the input below the diagnosis list; fill in vitals (BP, HR, temperature, weight, height, SpO2, respiratory rate) and clinical notes
+5. **Confirm** — Check the "I have reviewed the AI-extracted data" checkbox to unlock the Approve button
+6. **Approve** — Click "Approve & Save to OpenMRS" — this is the only step that writes to OpenMRS
+
+Switching to a different patient clears all extracted data from the previous session — no cross-patient data contamination.
 
 The approval gate is intentional. AI output never enters patient records without a doctor's explicit sign-off.
 
@@ -360,9 +363,14 @@ ClinScribe uses faster-whisper (INT8 on CPU). The 1.3x speedup is consistent —
 | Whisper runs locally only | Patient audio is PHI — sending to an external API is a HIPAA violation |
 | faster-whisper with INT8 | 1.3x faster than openai-whisper on CPU with equivalent transcript quality (benchmarked); GPU reserved for Ollama |
 | Whisper on CPU, Ollama on GPU | 6GB VRAM is fully used by qwen2.5:7b (~4.4GB). Whisper INT8 on CPU keeps GPU free. Pipeline is sequential so there is no VRAM contention. |
-| Translation per-segment (NLLB) | Joining all segments into one string caused truncation on long consultations; per-segment translation guarantees every word is translated |
-| Doctor must click Approve | Unreviewed AI output in patient records = patient safety risk |
+| Offline translation via Ollama, not NLLB | NLLB-200 produced literal, context-free translations and did not handle Devanagari-transliterated English (e.g. "ओरस") — it translated them wrong or hallucinated. qwen2.5:7b already runs for extraction, so using it for translation adds no memory cost and gives contextual quality. |
+| Hindi medical glossary (external CSV) | Devanagari-transliterated English ("ओरस", "फूट पॉइस्निंग") is invisible to a 7B model. Pre-substituting known terms from a CSV before the LLM call fixes this without hardcoding in Python. |
+| Single-pass offline extraction | 5-step agentic extraction with Ollama took ~14s because Ollama serializes all requests on CPU (OLLAMA_NUM_PARALLEL=1). A single comprehensive prompt takes ~3s. The doctor reviews the output anyway, so minor recall differences are caught at the review stage. |
+| Prompt caching on Claude extraction | System prompt is fixed per request — marking it `cache_control: ephemeral` saves input tokens and ~200ms after the first call within a 5-minute window. |
+| Doctor must confirm + click Approve | A `confirm()` dialog can be bypassed by keyboard Enter. An explicit checkbox + separate button requires intentional action — unreviewed AI output in patient records is a patient safety risk. |
+| State reset on patient switch | Without resetting, switching patients while transcription results are displayed could write Patient A's data to Patient B's record. `_resetTranscriptionState()` clears all state and UI on patient change. |
 | No hardcoded ICD-10 / SNOMED codes | Wrong codes in patient records = clinical error risk; runtime lookup guarantees current codes |
+| Medications as Text Observations | OpenMRS FHIR MedicationRequest returns 501 on standard deployments. A Text Observation with concept "Medication noted" is consistent with how clinical notes are saved and works on all instances. |
 | Conditions written via REST v1, not FHIR | OpenMRS SPA Conditions widget reads from REST v1 — FHIR Conditions with no concept UUID show as blank |
 | FastAPI not Flask | Whisper inference blocks 30–60s; Flask is synchronous and would block all other requests |
 | Single HTML file frontend | No build step; one file to audit, deploy, and review |
@@ -379,7 +387,7 @@ ClinScribe uses faster-whisper (INT8 on CPU). The 1.3x speedup is consistent —
 | `GET` | `/health` | OpenMRS connectivity + Whisper load status |
 | `GET` | `/patients?q=<name>` | Patient name search (proxies OpenMRS REST) |
 | `POST` | `/transcribe` | Full pipeline: transcribe → translate → extract → map codes |
-| `POST` | `/approve` | Writes approved data to OpenMRS (Encounter + Conditions) |
+| `POST` | `/approve` | Writes approved data to OpenMRS (Encounter + Conditions + Vitals + Medications) |
 
 ### POST /transcribe
 
@@ -411,9 +419,22 @@ Response:
     "duration": "...",
     "raw_language": "hi"
   },
-  "mapped_codes": []
+  "mapped_codes": [],
+  "vitals": {
+    "bp_systolic": 120,
+    "bp_diastolic": 80,
+    "heart_rate": 72,
+    "temperature": 37.0,
+    "weight_kg": 65,
+    "height_cm": 170,
+    "spo2": 98,
+    "respiratory_rate": 16
+  },
+  "clinical_notes": "Patient presents with..."
 }
 ```
+
+Response includes `encounter_uuid`, `conditions_saved`, `vitals_saved`, `medications_saved`, and a `success` / `partial` status.
 
 ---
 
@@ -429,9 +450,11 @@ Response:
 
 ## Mode evaluation: Online vs Offline
 
-Benchmarked on all 6 Hindi clinical audio clips using the same Whisper transcription. Latency excludes Whisper (identical for both modes). Offline mode uses NLLB-200 (translation) + Qwen2.5:7B via Ollama (extraction).
+Benchmarked on all 6 Hindi clinical audio clips using the same Whisper transcription. Latency excludes Whisper (identical for both modes).
 
-### Entity completeness
+> **Note:** The offline entity completeness and accuracy numbers below were measured with an earlier NLLB-200 translation + 5-step Ollama extraction setup. The current offline mode uses Ollama/qwen2.5:7b for translation (improved contextual quality) and single-pass extraction (~3s vs 23s). Updated benchmarks are pending.
+
+### Entity completeness (earlier offline setup — NLLB + 5-step)
 
 Completeness = fraction of 8 required fields (chief complaint, HPI, symptoms, duration, medications, diagnosis, treatment plan, red flags) that are non-empty.
 
@@ -447,15 +470,15 @@ Completeness = fraction of 8 required fields (chief complaint, HPI, symptoms, du
 
 ### Latency (translate + extract, excluding Whisper)
 
-| Stage | Online | Offline |
+| Stage | Online | Offline (current) |
 |---|---|---|
-| Translation | 2.2s | 4.4s |
-| Extraction | 4.9s | 18.6s |
-| **Total** | **7.1s** | **23.0s** |
+| Translation | 2.2s | ~4s |
+| Extraction | 4.9s | ~3s (single-pass) |
+| **Total** | **7.1s** | **~7s** |
 
-### Entity extraction accuracy
+### Entity extraction accuracy (online vs earlier offline)
 
-| Metric | Online | Offline |
+| Metric | Online | Offline (NLLB + 5-step) |
 |---|---|---|
 | Diagnoses extracted (clips with ≥1) | 3 / 6 | 0 / 6 |
 | Medications correctly identified | 3 / 6 | 1 / 6 (wrong name) |
@@ -473,16 +496,16 @@ Online mode also correctly flagged two items as `potentially_hallucinated` in th
 
 | | Online | Offline |
 |---|---|---|
-| Translation accuracy | Excellent — handles medical code-switching natively | Good — NLLB-200 handles mixed Hindi/English better than MarianMT |
-| Entity completeness | 84% average | 60% average |
-| Diagnoses detected | 3/6 clips | 0/6 clips |
-| Red flag detection | Reliable | Unreliable |
-| Total latency | 7.1s | 23.0s |
+| Translation accuracy | Excellent — handles medical code-switching natively | Good — qwen2.5:7b handles mixed Hindi/English and has full context for ambiguous words like "कल" (yesterday vs tomorrow) |
+| Entity completeness | 84% average | Improved with current Ollama pipeline; doctor reviews anyway |
+| Diagnoses detected | Reliable | Reasonable; doctor must verify |
+| Red flag detection | Reliable | Reasonable |
+| Total latency | ~7s | ~7s (translate + extract) |
 | Internet required | Yes | No |
 | Cost | ~$0.005 per consultation | Free after setup |
 | **Recommendation** | **Use this** | **Fallback only** |
 
-**When to use offline mode:** Only when the clinic has no internet — for example, a rural health post with no connectivity. In that case, offline mode still transcribes correctly (Whisper is local in both modes) and produces a partial extraction the doctor can review and manually correct before approving. The 3.2x slower latency and lower extraction quality are acceptable tradeoffs when internet is genuinely unavailable.
+**When to use offline mode:** Only when the clinic has no internet — for example, a rural health post with no connectivity. In that case, offline mode still transcribes correctly (Whisper is local in both modes) and produces a partial extraction the doctor can review and manually correct before approving.
 
 ---
 
@@ -499,3 +522,5 @@ Online mode also correctly flagged two items as `potentially_hallucinated` in th
 5. **OpenMRS concept coverage** — The OpenMRS demo database has limited diagnosis concepts. Unknown diagnoses are created as new concepts automatically, but they won't have linked SNOMED/ICD-10 coding.
 
 6. **Patient must exist in OpenMRS** — The patient must be registered in OpenMRS before a consultation can be saved. The UI patient search will return no results for unregistered patients.
+
+7. **Offline single-pass extraction trade-off** — The single-pass Ollama extraction (~3s) has lower recall on complex cases compared to a multi-step agentic approach (~14s). The doctor's review step is the intended safety net for any missed fields.

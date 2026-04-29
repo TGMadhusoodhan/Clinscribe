@@ -1,72 +1,128 @@
 """
-ClinScribe offline translation via facebook/nllb-200-distilled-600M.
-Replaces MarianMT — NLLB has significantly better contextual understanding.
-Segments are joined into one block before translation for cross-segment context,
-then split back by the segment separator.
+ClinScribe offline translation via Ollama (qwen2.5:7b).
+
+Replaces NLLB-200 which produced literal, context-free translations.
+qwen2.5:7b already runs for entity extraction — no extra memory cost.
+All segments are batched into one call so the model has full context
+(e.g. "कल" = yesterday vs tomorrow, speaker turns, medical intent).
+
+Glossary pre-substitution (data/hindi_medical_glossary.csv) runs before
+the Ollama call to handle Devanagari-transliterated English that even a 7B
+model doesn't recognise (e.g. "ओरस" → "ORS", "फूट पॉइस्निंग" → "food poisoning").
 """
 
+import csv
+import json
 import logging
-import torch
+import re
 from functools import lru_cache
+from pathlib import Path
+
+import config
 
 logger = logging.getLogger(__name__)
 
-_MODEL_ID = "facebook/nllb-200-distilled-600M"
-_SRC_LANG = "hin_Deva"   # Devanagari Hindi
-_TGT_LANG = "eng_Latn"   # English
+_OLLAMA_BASE_URL  = getattr(config, "OLLAMA_BASE_URL", "http://localhost:11434/v1")
+_OLLAMA_MODEL     = getattr(config, "OLLAMA_MODEL",    "qwen2.5:7b")
+_GLOSSARY_PATH    = Path(__file__).parent.parent / "data" / "hindi_medical_glossary.csv"
+
+# Module-level singleton — avoids re-creating connection pool on every translation call
+from openai import OpenAI as _OpenAI
+_ollama_client = _OpenAI(base_url=_OLLAMA_BASE_URL, api_key="ollama")
 
 
 @lru_cache(maxsize=1)
-def _load_models():
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+def _load_glossary() -> list[tuple[str, str]]:
+    """Loads hindi_medical_glossary.csv sorted longest-first for greedy matching."""
+    if not _GLOSSARY_PATH.exists():
+        logger.warning(f"[translate_offline] Glossary not found at {_GLOSSARY_PATH}")
+        return []
+    pairs: list[tuple[str, str]] = []
+    with open(_GLOSSARY_PATH, encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            h = row.get("hindi", "").strip()
+            e = row.get("english", "").strip()
+            if h and e:
+                pairs.append((h, e))
+    pairs.sort(key=lambda p: len(p[0]), reverse=True)
+    return pairs
 
-    logger.info(f"[translate_offline] Loading {_MODEL_ID} on GPU...")
-    tokenizer = AutoTokenizer.from_pretrained(_MODEL_ID)
-    # NLLB runs on CPU — GPU is reserved for Ollama (qwen2.5:7b)
-    model = AutoModelForSeq2SeqLM.from_pretrained(_MODEL_ID).cpu()
-    model.eval()
-    logger.info("[translate_offline] Model loaded on CPU.")
-    return tokenizer, model
+
+def _apply_glossary(text: str) -> str:
+    """Replaces Devanagari-transliterated English and known mis-translated terms
+    with their English equivalents so Ollama gets unambiguous input."""
+    for hindi, english in _load_glossary():
+        text = text.replace(hindi, english)
+    return text
+
+
+def _parse_json_array(raw: str) -> list[str]:
+    """Extract a JSON array of strings from model output, tolerating markdown fences."""
+    raw = re.sub(r"^```(?:json)?\s*", "", raw.strip())
+    raw = re.sub(r"\s*```$", "", raw).strip()
+    try:
+        result = json.loads(raw)
+        if isinstance(result, list):
+            return [str(x) for x in result]
+    except json.JSONDecodeError:
+        pass
+    # Fallback: find first [...] block in the response
+    m = re.search(r"\[.*?\]", raw, re.DOTALL)
+    if m:
+        try:
+            result = json.loads(m.group(0))
+            if isinstance(result, list):
+                return [str(x) for x in result]
+        except json.JSONDecodeError:
+            pass
+    return []
 
 
 def translate_segments_offline(segments: list) -> list:
     """
-    Translates Hindi segment texts to English using NLLB-200-distilled-600M on CPU.
-    Each segment is translated individually so no segment is ever truncated by the
-    1024-token model limit — longer consultations were previously cut off mid-transcript.
-    Drop-in replacement for transcribe.translate_segments() in offline mode.
-    Inputs: segments — list of dicts from transcribe() with 'text' key
-    Outputs: same list with 'english_translation' added to each segment
+    Translates Hindi segments to English using Ollama (qwen2.5:7b).
+    All segments are batched into one call — the model sees the full
+    conversation context so it resolves ambiguous words correctly
+    (e.g. "कल" = yesterday, speaker identity, clinical intent).
+    Falls back to original segment text if the model call fails.
     """
     if not segments:
         return segments
 
-    tokenizer, model = _load_models()
-    forced_bos = tokenizer.convert_tokens_to_ids(_TGT_LANG)
+    # Apply glossary first — converts Devanagari-transliterated English ("ओरस" → "ORS")
+    # that even a 7B model won't recognise from context alone.
+    numbered = "\n".join(
+        f"[{i}] {_apply_glossary(seg['text'])}" for i, seg in enumerate(segments)
+    )
 
-    for seg in segments:
-        text = seg["text"].strip()
-        if not text:
-            seg["english_translation"] = ""
-            continue
+    prompt = (
+        "You are a medical interpreter. Translate each numbered Hindi segment into "
+        "natural, fluent English. Use clinical terminology where appropriate. "
+        "Preserve the original meaning and speaker intent — do not paraphrase or "
+        "add information. Return ONLY a JSON array of strings, one translation per "
+        "segment, in the same order as the input. No explanation, no markdown.\n\n"
+        f"{numbered}"
+    )
 
-        inputs = tokenizer(
-            text,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512,
+    try:
+        response = _ollama_client.chat.completions.create(
+            model=_OLLAMA_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=1024,  # clinical translations are short — cap prevents over-generation
         )
+        raw = response.choices[0].message.content or ""
+        translations = _parse_json_array(raw)
 
-        with torch.no_grad():
-            output_ids = model.generate(
-                **inputs,
-                forced_bos_token_id=forced_bos,
-                num_beams=5,
-                max_length=512,
-                early_stopping=True,
-            )
+        for i, seg in enumerate(segments):
+            if i < len(translations) and translations[i].strip():
+                seg["english_translation"] = translations[i].strip()
+            else:
+                seg["english_translation"] = seg["text"]
 
-        seg["english_translation"] = tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
+    except Exception as e:
+        logger.warning(f"[translate_offline] Ollama call failed: {e} — using original text")
+        for seg in segments:
+            seg.setdefault("english_translation", seg["text"])
 
     return segments

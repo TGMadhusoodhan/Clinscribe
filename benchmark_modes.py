@@ -14,7 +14,7 @@ Metrics:
 
 Requirements:
   - Online:  ANTHROPIC_API_KEY in .env
-  - Offline: vLLM server running at VLLM_BASE_URL (VLLM_MODEL loaded)
+  - Offline: Ollama server running at OLLAMA_BASE_URL (OLLAMA_MODEL loaded)
   - Audio clips in benchmark_audio/ (run Benchmarking.py first if missing)
 
 Output:
@@ -316,7 +316,7 @@ def run_benchmark(run_online_mode: bool = True, run_offline_mode: bool = True):
             "avg_extract_latency_s": avg(offline_extract_lat),
             "avg_total_latency_s": round(avg(offline_translate_lat) + avg(offline_extract_lat), 2),
             "translation_model": "Helsinki-NLP/opus-mt-hi-en",
-            "extraction_model": config.VLLM_MODEL,
+            "extraction_model": config.OLLAMA_MODEL,
         } if run_offline_mode else None,
         "clips_detail": all_results,
     }
@@ -359,7 +359,7 @@ def run_benchmark(run_online_mode: bool = True, run_offline_mode: bool = True):
     lines.append(f"  Online  translation : {config.ANTHROPIC_MODEL}")
     lines.append(f"  Online  extraction  : {config.ANTHROPIC_MODEL}")
     lines.append(f"  Offline translation : Helsinki-NLP/opus-mt-hi-en")
-    lines.append(f"  Offline extraction  : {config.VLLM_MODEL}")
+    lines.append(f"  Offline extraction  : {config.OLLAMA_MODEL}")
 
     # Side-by-side translations
     lines.append(f"\n{'=' * 65}")
