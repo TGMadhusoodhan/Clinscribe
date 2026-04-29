@@ -7,7 +7,6 @@ All audio is processed locally — never sent to external APIs (HIPAA constraint
 import time
 import warnings
 import torch
-import whisper
 import numpy as np
 from pathlib import Path
 import anthropic
@@ -19,11 +18,13 @@ import config
 # ── Model loading (happens once on import, not per call) ──────────────────────
 # Loading takes 10-15 seconds. Per-call loading makes the API unusable.
 
-_device = "cuda" if torch.cuda.is_available() else "cpu"
-_fp16 = torch.cuda.is_available()  # fp16 only valid on CUDA; False on CPU
+# Whisper runs on CPU (int8) so the GPU is fully available for Ollama (qwen2.5:7b needs ~4.4GB VRAM).
+# faster-whisper with int8 is 1.3x faster than openai-whisper on CPU with equivalent quality
+# (benchmarked on 6 Hindi clinical clips — see benchmark_whisper_compare_report.txt).
+from faster_whisper import WhisperModel
 
-print(f"[transcribe] Loading Whisper {config.WHISPER_MODEL} on {_device}...")
-_whisper_model = whisper.load_model(config.WHISPER_MODEL, device=_device)
+print(f"[transcribe] Loading Whisper {config.WHISPER_MODEL} on CPU (int8)...")
+_whisper_model = WhisperModel(config.WHISPER_MODEL, device="cpu", compute_type="int8")
 print(f"[transcribe] Whisper loaded.")
 
 # silero-vad removes silence before Whisper, reducing WER on clinic audio
@@ -97,35 +98,36 @@ def transcribe(audio_path: str) -> dict:
     audio_np = _remove_silence(audio_path)
     duration = len(audio_np) / 16000.0
 
-    result = _whisper_model.transcribe(
+    # faster-whisper returns a generator — must be consumed before duration is used
+    raw_segments, _ = _whisper_model.transcribe(
         audio_np,
         language=config.WHISPER_LANGUAGE,  # "hi" — ISO 639-1 code for Hindi
         initial_prompt=_INITIAL_PROMPT,
         word_timestamps=True,
-        fp16=_fp16,
+        beam_size=5,
     )
 
     segments = []
-    for seg in result["segments"]:
+    for seg in raw_segments:
         words = []
-        for w in seg.get("words", []):
+        for w in (seg.words or []):
             words.append({
-                "word": w["word"],
-                "start": round(float(w["start"]), 3),
-                "end": round(float(w["end"]), 3),
+                "word": w.word,
+                "start": round(w.start, 3),
+                "end": round(w.end, 3),
             })
         segments.append({
-            "id": seg["id"],
-            "start": round(float(seg["start"]), 3),
-            "end": round(float(seg["end"]), 3),
-            "text": seg["text"].strip(),
+            "id": seg.id,
+            "start": round(seg.start, 3),
+            "end": round(seg.end, 3),
+            "text": seg.text.strip(),
             "language": config.WHISPER_LANGUAGE,
             "words": words,
         })
 
     return {
         "segments": segments,
-        "full_text": result["text"].strip(),
+        "full_text": " ".join(s["text"] for s in segments),
         "duration": round(duration, 2),
         "model_used": config.WHISPER_MODEL,
         "language": config.WHISPER_LANGUAGE,

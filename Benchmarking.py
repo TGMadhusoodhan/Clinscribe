@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 import time
-import whisper
+from faster_whisper import WhisperModel
 from jiwer import wer
 import edge_tts
 
@@ -167,17 +167,18 @@ def transcribe_clip(model, audio_path: str, language: str) -> dict:
         "sw": "Hii ni mazungumzo kati ya daktari na mgonjwa. Dalili za mgonjwa, dawa, na utambuzi.",
     }
 
-    result = model.transcribe(
+    raw_segments, _ = model.transcribe(
         audio_path,
         language=language,
         initial_prompt=prompts[language],
-        word_timestamps=False,  # Faster for benchmarking — not needed for WER
-        fp16=True,              # Use float16 to fit in 4GB VRAM on RTX 3050
+        word_timestamps=False,
+        beam_size=5,
     )
+    text = " ".join(seg.text.strip() for seg in raw_segments)
 
     latency = time.time() - start
     return {
-        "text": result["text"].strip(),
+        "text": text,
         "latency_seconds": round(latency, 2),
     }
 
@@ -192,8 +193,8 @@ def run_benchmark():
     print("Model: large-v3  |  Task: transcribe (no translation)")
     print("=" * 60)
 
-    print("\nLoading Whisper large-v3... (downloads ~3GB on first run)")
-    model = whisper.load_model("large-v3")
+    print("\nLoading Whisper large-v3 (int8)...")
+    model = WhisperModel("large-v3", device="cpu", compute_type="int8")
     print("Model loaded.\n")
 
     results = []

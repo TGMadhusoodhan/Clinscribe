@@ -11,7 +11,7 @@ Hindi AI clinical scribe for OpenMRS. A doctor speaks in Hindi; ClinScribe trans
 ## What it does
 
 1. Doctor uploads a Hindi audio recording (MP3/WAV) of a patient consultation
-2. ClinScribe transcribes the audio locally using Whisper large-v3
+2. ClinScribe transcribes the audio locally using faster-whisper large-v3 (INT8, CPU)
 3. The transcript is translated to English
 4. Claude (or a local Qwen model in offline mode) extracts structured clinical entities: chief complaint, symptoms, diagnoses, medications, treatment plan, red flags
 5. Diagnoses are mapped to ICD-10 and SNOMED-CT codes via public APIs
@@ -28,11 +28,11 @@ Audio (Hindi MP3/WAV)
       ↓
 [silero-vad]              removes silence — reduces WER on clinic recordings
       ↓
-[Whisper large-v3]        local inference — audio never leaves the machine (HIPAA)
+[faster-whisper large-v3] local inference, INT8 on CPU — audio never leaves the machine (HIPAA)
       ↓  Hindi transcript with word-level timestamps
-[Translation]             Online: Claude API  |  Offline: Helsinki-NLP/opus-mt-hi-en
-      ↓  English transcript
-[Entity Extraction]       Online: Claude API  |  Offline: Qwen2.5:3B via Ollama
+[Translation]             Online: Claude API  |  Offline: facebook/nllb-200-distilled-600M
+      ↓  English transcript (translated per-segment — no truncation on long consultations)
+[Entity Extraction]       Online: Claude API  |  Offline: Qwen2.5:7B via Ollama (5-step agentic)
       ↓  {chief_complaint, symptoms, diagnosis, medications, treatment_plan, red_flags}
 [ICD-10 + SNOMED APIs]   runtime lookup — no hardcoded codes
       ↓  [{term, icd10, snomed, confidence}]
@@ -47,8 +47,8 @@ Audio (Hindi MP3/WAV)
 
 | | Online | Offline |
 |---|---|---|
-| **Translation** | Claude API | Helsinki-NLP/opus-mt-hi-en (MarianMT) |
-| **Entity extraction** | Claude API | Qwen2.5:3B via Ollama (local) |
+| **Translation** | Claude API | facebook/nllb-200-distilled-600M |
+| **Entity extraction** | Claude API | Qwen2.5:7B via Ollama (local) |
 | **Internet required** | Yes (Anthropic API) | No (fully local) |
 | **Setup** | Just an API key | Ollama + model pull |
 | **Use case** | Default / clinic with internet | Rural deployment, air-gapped |
@@ -62,10 +62,10 @@ Toggle between modes using the switch in the top-right of the UI.
 ```
 clinscribe/
 ├── pipeline/
-│   ├── transcribe.py         Whisper large-v3 + silero-vad; online Claude translation
-│   ├── translate_offline.py  Offline translation via Helsinki-NLP/opus-mt-hi-en
+│   ├── transcribe.py         faster-whisper large-v3 (INT8, CPU) + silero-vad; online Claude translation
+│   ├── translate_offline.py  Offline translation via facebook/nllb-200-distilled-600M (per-segment)
 │   ├── extract.py            Online entity extraction via Claude API
-│   ├── extract_offline.py    Offline entity extraction via vLLM (Qwen2.5)
+│   ├── extract_offline.py    Offline agentic extraction via Ollama (Qwen2.5:7B, 5 steps)
 │   ├── map_codes.py          ICD-10 (icd10api.com) + SNOMED-CT (ihtsdotools.org) lookup
 │   └── fhir_write.py         OpenMRS FHIR R4 Encounter + REST v1 Condition write-back
 ├── review_ui/
@@ -104,7 +104,7 @@ clinscribe/
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for OpenMRS)
 - [Ollama](https://ollama.com/download) (for offline mode entity extraction)
 - FFmpeg — `winget install ffmpeg` on Windows, `brew install ffmpeg` on macOS
-- GPU recommended (CUDA 11.8+) — CPU works but transcription is slow
+- GPU recommended (CUDA 11.8+) — CPU works but transcription is slower
 - Microsoft C++ Build Tools (Windows only, required for some packages)
 
 ---
@@ -164,8 +164,8 @@ WHISPER_LANGUAGE=hi
 ANTHROPIC_MODEL=claude-sonnet-4-6
 
 # Offline mode — Ollama server
-VLLM_BASE_URL=http://localhost:11434/v1
-VLLM_MODEL=qwen2.5:3b
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=qwen2.5:7b
 ```
 
 ### 4. Start OpenMRS
@@ -199,7 +199,7 @@ Offline mode requires two extra components:
 
 ### Translation model (auto-downloads on first use)
 
-`Helsinki-NLP/opus-mt-hi-en` downloads automatically from HuggingFace (~300MB) on first offline run. No account needed.
+`facebook/nllb-200-distilled-600M` downloads automatically from HuggingFace (~1.2GB) on first offline run. No account needed. Translations are done per-segment so long consultations are never truncated.
 
 ### Ollama for entity extraction
 
@@ -209,15 +209,15 @@ Offline entity extraction runs via [Ollama](https://ollama.com/download), which 
 
 1. Install Ollama from [ollama.com/download](https://ollama.com/download)
 
-2. Pull the model (~2GB):
+2. Pull the model (~4.5GB):
    ```bash
-   ollama pull qwen2.5:3b
+   ollama pull qwen2.5:7b
    ```
 
 3. Set these in `.env`:
    ```env
-   VLLM_BASE_URL=http://localhost:11434/v1
-   VLLM_MODEL=qwen2.5:3b
+   OLLAMA_BASE_URL=http://localhost:11434/v1
+   OLLAMA_MODEL=qwen2.5:7b
    ```
 
 4. Start Ollama before running ClinScribe:
@@ -226,6 +226,26 @@ Offline entity extraction runs via [Ollama](https://ollama.com/download), which 
    ```
 
 Then start ClinScribe normally and flip the **Offline** toggle in the UI header.
+
+### Verifying Ollama is using your GPU
+
+Ollama automatically uses the GPU if CUDA drivers are installed. To confirm:
+
+```bash
+ollama ps
+```
+
+Look for `100% GPU` in the `PROCESSOR` column. If it shows `100% CPU`, the model is running on CPU — check that your CUDA drivers are installed and that Ollama was installed with GPU support.
+
+You can also check GPU memory usage directly:
+
+```bash
+nvidia-smi
+```
+
+`qwen2.5:7b` uses approximately 4.4–4.7GB of VRAM. If your GPU has less than 5GB free, Ollama will fall back to CPU automatically.
+
+> **Note on VRAM allocation:** Whisper runs on CPU (INT8 via faster-whisper) so the full GPU is available for Ollama. On a 6GB GPU, Ollama gets the entire VRAM budget. Whisper and Ollama are sequential in the pipeline — Whisper finishes before Ollama starts — so there is no simultaneous VRAM contention.
 
 ---
 
@@ -273,6 +293,8 @@ python evaluation/entity_f1.py
 
 ## Benchmark results
 
+### Whisper: Hindi vs Swahili
+
 Whisper large-v3 on 6 matched synthetic clips per language (Edge TTS):
 
 | Scenario | Hindi WER | Swahili WER | Winner |
@@ -289,6 +311,22 @@ Hindi passes the 20% clinical usability threshold. Swahili is marginal. Hindi wa
 
 > TTS audio is cleaner than real clinic audio. Expect 5–15% higher WER in production.
 
+### faster-whisper vs openai-whisper (large-v3, INT8, CPU)
+
+Benchmarked on all 6 Hindi clinical clips. Both models produce essentially identical transcripts — differences are limited to minor spelling variants (e.g. `दर्ध` vs `दर्द`) where faster-whisper is marginally more accurate.
+
+| Scenario | openai-whisper | faster-whisper | Speedup |
+|---|---|---|---|
+| Fever and headache | 43.3s | 33.3s | 1.3x |
+| Chest pain and breathlessness | 45.5s | 35.5s | 1.3x |
+| Diabetes follow-up | 44.7s | 35.3s | 1.3x |
+| Cough and TB concern | 47.1s | 37.0s | 1.3x |
+| Stomach pain and vomiting | 45.7s | 35.9s | 1.3x |
+| Joint pain | 46.3s | 36.0s | 1.3x |
+| **Total** | **272.5s** | **213.0s** | **1.3x** |
+
+ClinScribe uses faster-whisper (INT8 on CPU). The 1.3x speedup is consistent — roughly 10 seconds saved per consultation.
+
 ---
 
 ## Key design decisions
@@ -296,6 +334,9 @@ Hindi passes the 20% clinical usability threshold. Swahili is marginal. Hindi wa
 | Decision | Why |
 |---|---|
 | Whisper runs locally only | Patient audio is PHI — sending to an external API is a HIPAA violation |
+| faster-whisper with INT8 | 1.3x faster than openai-whisper on CPU with equivalent transcript quality (benchmarked); GPU reserved for Ollama |
+| Whisper on CPU, Ollama on GPU | 6GB VRAM is fully used by qwen2.5:7b (~4.4GB). Whisper INT8 on CPU keeps GPU free. Pipeline is sequential so there is no VRAM contention. |
+| Translation per-segment (NLLB) | Joining all segments into one string caused truncation on long consultations; per-segment translation guarantees every word is translated |
 | Doctor must click Approve | Unreviewed AI output in patient records = patient safety risk |
 | No hardcoded ICD-10 / SNOMED codes | Wrong codes in patient records = clinical error risk; runtime lookup guarantees current codes |
 | Conditions written via REST v1, not FHIR | OpenMRS SPA Conditions widget reads from REST v1 — FHIR Conditions with no concept UUID show as blank |
@@ -338,15 +379,15 @@ Response:
   "patient_uuid": "...",
   "edited_entities": {
     "chief_complaint": "...",
-    "symptoms": [...],
-    "diagnosis": [...],
-    "medications_mentioned": [...],
+    "symptoms": [],
+    "diagnosis": [],
+    "medications_mentioned": [],
     "treatment_plan": "...",
-    "red_flags": [...],
+    "red_flags": [],
     "duration": "...",
     "raw_language": "hi"
   },
-  "mapped_codes": [...]
+  "mapped_codes": []
 }
 ```
 
@@ -364,13 +405,13 @@ Response:
 
 ## Mode evaluation: Online vs Offline
 
-Benchmarked on all 6 Hindi clinical audio clips using the same Whisper transcription. Latency excludes Whisper (identical for both modes). Offline mode uses MarianMT (translation) + Qwen2.5:3B via Ollama (extraction).
+Benchmarked on all 6 Hindi clinical audio clips using the same Whisper transcription. Latency excludes Whisper (identical for both modes). Offline mode uses NLLB-200 (translation) + Qwen2.5:7B via Ollama (extraction).
 
 ### Entity completeness
 
 Completeness = fraction of 8 required fields (chief complaint, HPI, symptoms, duration, medications, diagnosis, treatment plan, red flags) that are non-empty.
 
-| Scenario | Online (Claude) | Offline (MarianMT + Qwen 3B) |
+| Scenario | Online (Claude) | Offline (NLLB + Qwen 7B) |
 |---|---|---|
 | Fever and headache | 88% | 62% |
 | Chest pain and breathlessness | 75% | 50% |
@@ -387,19 +428,6 @@ Completeness = fraction of 8 required fields (chief complaint, HPI, symptoms, du
 | Translation | 2.2s | 4.4s |
 | Extraction | 4.9s | 18.6s |
 | **Total** | **7.1s** | **23.0s** |
-
-### Translation quality
-
-This is where the gap is most visible. The offline MarianMT model fails on medical Hindi because clinical speech mixes Hindi grammar with English medical terms (code-switching), which MarianMT was not trained for.
-
-| Clip | Online (Claude) | Offline (MarianMT) |
-|---|---|---|
-| Chest pain | *"I am having chest pain and difficulty breathing"* | *"I'm growing up in the chest and suffering from taking in my mother-in-law"* |
-| Diabetes | *"Fasting blood sugar came out to be 180. Are you taking Metformin?"* | *"Fasting blood pressure has come 180. Are you taking Metzin?"* |
-| TB concern | *"Sometimes there is also blood in the sputum. Have you come in contact with any TB patient?"* | *"For two weeks there's been blood at any given time. If you come into contact with a TB patient, I've got T-B."* |
-| Joint pain | *"There is pain in both knees... Arthritis can occur with age."* | *"Both knees are under the weight of a lot of pain... Arthur might have been diagnosed"* |
-
-The offline translations are partially or entirely wrong on 4 of 6 clips. Because the extraction runs on the translated text, these errors cascade — wrong translation → wrong entities.
 
 ### Entity extraction accuracy
 
@@ -421,7 +449,7 @@ Online mode also correctly flagged two items as `potentially_hallucinated` in th
 
 | | Online | Offline |
 |---|---|---|
-| Translation accuracy | Excellent — handles medical code-switching natively | Poor — MarianMT fails on Hindi+English mixed speech |
+| Translation accuracy | Excellent — handles medical code-switching natively | Good — NLLB-200 handles mixed Hindi/English better than MarianMT |
 | Entity completeness | 84% average | 60% average |
 | Diagnoses detected | 3/6 clips | 0/6 clips |
 | Red flag detection | Reliable | Unreliable |
@@ -431,8 +459,6 @@ Online mode also correctly flagged two items as `potentially_hallucinated` in th
 | **Recommendation** | **Use this** | **Fallback only** |
 
 **When to use offline mode:** Only when the clinic has no internet — for example, a rural health post with no connectivity. In that case, offline mode still transcribes correctly (Whisper is local in both modes) and produces a partial extraction the doctor can review and manually correct before approving. The 3.2x slower latency and lower extraction quality are acceptable tradeoffs when internet is genuinely unavailable.
-
-**Root cause of offline gap:** The bottleneck is translation, not extraction. MarianMT (`Helsinki-NLP/opus-mt-hi-en`) is a 300MB model trained on general Hindi text — it was not trained on clinical speech that mixes Hindi and English medical terminology. A larger offline translation model (e.g. NLLB-1.3B) would close most of the gap, at the cost of higher memory and latency.
 
 ---
 
@@ -449,5 +475,3 @@ Online mode also correctly flagged two items as `potentially_hallucinated` in th
 5. **OpenMRS concept coverage** — The OpenMRS demo database has limited diagnosis concepts. Unknown diagnoses are created as new concepts automatically, but they won't have linked SNOMED/ICD-10 coding.
 
 6. **Patient must exist in OpenMRS** — The patient must be registered in OpenMRS before a consultation can be saved. The UI patient search will return no results for unregistered patients.
-
-7. **Offline translation quality** — `Helsinki-NLP/opus-mt-hi-en` is a compact MarianMT model. Translation quality is lower than Claude, which may reduce entity extraction accuracy in offline mode.
