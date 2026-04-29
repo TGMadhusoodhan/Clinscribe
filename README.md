@@ -227,6 +227,30 @@ Offline entity extraction runs via [Ollama](https://ollama.com/download), which 
 
 Then start ClinScribe normally and flip the **Offline** toggle in the UI header.
 
+### Pinning Ollama to prevent auto-updates
+
+Ollama auto-updates silently on Windows and macOS. An update can change API behavior and break the offline pipeline without warning. Disable it immediately after install:
+
+**Windows** — open `%APPDATA%\Ollama\ollama.json` (create it if missing) and add:
+```json
+{
+  "noAutoUpdate": true
+}
+```
+
+Or via the system tray: right-click the Ollama icon in the taskbar → **Settings** → uncheck **Automatically update Ollama**.
+
+**macOS** — open `~/.ollama/ollama.json` and add the same `"noAutoUpdate": true` line.
+
+To pin the exact model weights you pulled (so a future `ollama pull` can't silently change behavior), record the current digest:
+```bash
+ollama show qwen2.5:7b --modelinfo
+```
+Save the `sha256:...` digest. If you ever need to restore the exact same model:
+```bash
+ollama pull qwen2.5:7b@sha256:<your-digest-here>
+```
+
 ### Verifying Ollama is using your GPU
 
 Ollama automatically uses the GPU if CUDA drivers are installed. To confirm:
