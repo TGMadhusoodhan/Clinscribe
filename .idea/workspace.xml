@@ -5,42 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="aa1302a6-fca7-4058-add7-8576b54f1323" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/clinscribe.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ARCHITECTURE.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Benchmarking.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/DEVLOG.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ERROR_LOG.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/benchmark_report.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/benchmark_results.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/corpus/benchmark_results.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/corpus/benchmark_whisper.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/corpus/generate_corpus.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/enable_basic_auth.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/evaluation/entity_f1.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/evaluation/wer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pipeline/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pipeline/extract.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pipeline/fhir_write.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pipeline/map_codes.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pipeline/transcribe.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/review_ui/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/review_ui/app.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/review_ui/static/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_extract.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_fhir_write.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_transcribe.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/clinscribe.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/clinscribe.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ERROR_LOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/ERROR_LOG.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/IndicTransToolkit/IndicTransToolkit/processor.c" beforeDir="false" afterPath="$PROJECT_DIR$/IndicTransToolkit/IndicTransToolkit/processor.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pipeline/fhir_write.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline/fhir_write.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pipeline/translate_offline.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline/translate_offline.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/review_ui/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/review_ui/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/review_ui/static/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/review_ui/static/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,20 +38,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Python.Benchmarking.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.Benchmarking.executor": "Run",
+    "Python.benchmark_modes.executor": "Run",
+    "Python.benchmark_translation_compare.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "settings.editor.selected.configurable": "terminal",
+    "to.speed.mode.migration.done": "true"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

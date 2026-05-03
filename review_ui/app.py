@@ -3,6 +3,7 @@ ClinScribe review UI — FastAPI backend.
 Uses FastAPI (not Flask) because Whisper inference takes 30-60s; Flask would block all requests.
 """
 
+import asyncio
 import io
 import json
 import logging
@@ -13,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -24,7 +25,6 @@ from pipeline.extract_offline import extract_offline
 from pipeline.fhir_write import (
     OpenMRSUnavailableError,
     write_encounter_and_conditions,
-    verify_openmrs_connection,
 )
 from pipeline.map_codes import map_codes
 from pipeline.transcribe import transcribe, translate_segments
@@ -217,12 +217,12 @@ async def search_patients(q: str = Query(default="")):
 
 # ── Transcribe ────────────────────────────────────────────────────────────────
 
-_ALLOWED_AUDIO_TYPES = {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp3", "audio/ogg"}
 _ALLOWED_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a"}
 
 
 @app.post("/transcribe")
 async def transcribe_audio(
+    request: Request,
     audio: UploadFile = File(...),
     mode: str = Form("online"),
 ):
@@ -252,9 +252,7 @@ async def transcribe_audio(
 
     raw_bytes = await audio.read()
     fmt = ext.lstrip(".")
-    if fmt == "mp3":
-        fmt = "mp3"
-    elif fmt in ("m4a",):
+    if fmt in ("m4a",):
         fmt = "mp4"
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
@@ -267,20 +265,33 @@ async def transcribe_audio(
         os.unlink(tmp_path)
         raise HTTPException(status_code=400, detail=f"Audio conversion failed: {conv_err}")
 
+    # Each stage runs in a thread pool so the event loop stays free.
+    # This means a new request can start immediately after Stop, instead of
+    # waiting for the old pipeline thread to fully finish on the server.
     timings = {}
     try:
-        # Stage 1: transcribe
+        # Stage 1: transcribe (CPU-bound — fastest-whisper releases GIL in C++ code)
         t0 = time.monotonic()
-        transcript_result = transcribe(tmp_path)
+        transcript_result = await asyncio.to_thread(transcribe, tmp_path)
         timings["transcribe"] = round(time.monotonic() - t0, 2)
+
+        if await request.is_disconnected():
+            return JSONResponse(status_code=499, content={"detail": "client disconnected"})
 
         # Stage 2: translate
         t0 = time.monotonic()
         if mode == "offline":
-            translated_segments = translate_segments_offline(list(transcript_result["segments"]))
+            translated_segments = await asyncio.to_thread(
+                translate_segments_offline, list(transcript_result["segments"])
+            )
         else:
-            translated_segments = translate_segments(list(transcript_result["segments"]))
+            translated_segments = await asyncio.to_thread(
+                translate_segments, list(transcript_result["segments"])
+            )
         timings["translate"] = round(time.monotonic() - t0, 2)
+
+        if await request.is_disconnected():
+            return JSONResponse(status_code=499, content={"detail": "client disconnected"})
 
         # Stage 3: extract — run on English translation so all entities are in English.
         # Diagnoses/symptoms extracted from Hindi would be in Devanagari and unusable
@@ -291,10 +302,13 @@ async def transcribe_audio(
             for seg in translated_segments
         )
         if mode == "offline":
-            entities = extract_offline(english_full_text)
+            entities = await asyncio.to_thread(extract_offline, english_full_text)
         else:
-            entities = extract(english_full_text)
+            entities = await asyncio.to_thread(extract, english_full_text)
         timings["extract"] = round(time.monotonic() - t0, 2)
+
+        if await request.is_disconnected():
+            return JSONResponse(status_code=499, content={"detail": "client disconnected"})
 
         # Stage 4: map codes (on diagnosis list)
         t0 = time.monotonic()
@@ -302,7 +316,7 @@ async def transcribe_audio(
             d.get("text", d) if isinstance(d, dict) else d
             for d in entities.get("diagnosis", [])
         ]
-        coded = map_codes(diagnoses)
+        coded = await asyncio.to_thread(map_codes, diagnoses)
         timings["map_codes"] = round(time.monotonic() - t0, 2)
 
         timings["total"] = round(sum(timings.values()), 2)
@@ -316,7 +330,7 @@ async def transcribe_audio(
         }
 
     except Exception as e:
-        stage = max(timings, key=timings.get) if timings else "transcribe"
+        stage = list(timings)[-1] if timings else "transcribe"
         _log_error("Step 12 — /transcribe", f"Running pipeline stage: {stage}", type(e).__name__, traceback.format_exc())
         raise HTTPException(status_code=500, detail={"error": stage, "detail": str(e)})
     finally:
@@ -347,7 +361,8 @@ async def approve_and_write(req: ApproveRequest):
     logger.warning(f"[approve] diagnoses received: {req.edited_entities.get('diagnosis', [])}")
 
     try:
-        result = write_encounter_and_conditions(
+        result = await asyncio.to_thread(
+            write_encounter_and_conditions,
             patient_uuid=req.patient_uuid,
             entities=req.edited_entities,
             mapped_codes=req.mapped_codes,

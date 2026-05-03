@@ -655,6 +655,9 @@
           <button id="transcribe-btn" class="btn btn-primary" disabled>
             Transcribe Hindi Audio
           </button>
+          <button id="stop-btn" class="btn" style="width:100%;background:var(--red);color:var(--white);margin-top:.4rem;display:none;">
+            ⬛ Stop
+          </button>
           <div id="transcribe-err" class="hidden"></div>
         </div>
       </div>
@@ -936,7 +939,7 @@ function setMode(m) {
   // Update pipeline legend labels
   const isOffline = m === 'offline';
   document.getElementById('pl-translate-label').textContent =
-    isOffline ? 'IndicTrans2 translation' : 'Claude translation';
+    isOffline ? 'Qwen2.5-7b translation' : 'Claude translation';
   document.getElementById('pl-extract-label').textContent =
     isOffline ? 'Qwen2.5-7B extraction' : 'Claude entity extraction';
 }
@@ -971,6 +974,15 @@ document.getElementById('patient-search').addEventListener('input', e => {
   const q = e.target.value.trim();
   if (q.length < 2) { hide('patient-results'); return; }
   _searchTimer = setTimeout(() => fetchPatients(q), 300);
+});
+
+// B3 fix: close dropdown when clicking outside the search widget
+document.addEventListener('click', e => {
+  const wrapper = document.getElementById('patient-results');
+  const input   = document.getElementById('patient-search');
+  if (wrapper && !wrapper.contains(e.target) && e.target !== input) {
+    hide('patient-results');
+  }
 });
 
 async function fetchPatients(q) {
@@ -1026,6 +1038,17 @@ document.getElementById('clear-patient').addEventListener('click', () => {
 });
 
 function _resetTranscriptionState() {
+  // B1 fix: abort any in-flight transcription so Patient A data can't be approved under Patient B
+  if (_transcribeAbort) {
+    for (const t of _stageTimers) clearTimeout(t);
+    _stageTimers = [];
+    _transcribeAbort.abort();
+    _transcribeAbort = null;
+    document.getElementById('stop-btn').style.display = 'none';
+    const btn = document.getElementById('transcribe-btn');
+    btn.disabled = !state.audioFile;
+    btn.textContent = 'Transcribe Hindi Audio';
+  }
   state.data     = null;
   state.approved = false;
   const cb = document.getElementById('review-confirm-cb');
@@ -1044,15 +1067,21 @@ function _resetTranscriptionState() {
 const dropZone  = document.getElementById('drop-zone');
 const fileInput = document.getElementById('audio-file');
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('over'); });
+function _isTranscribing() { return !!_transcribeAbort; }
+
+dropZone.addEventListener('click', () => { if (!_isTranscribing()) fileInput.click(); });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); if (!_isTranscribing()) dropZone.classList.add('over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('over');
-  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  if (!_isTranscribing() && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener('change', e => { if (e.target.files[0]) setFile(e.target.files[0]); });
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) setFile(e.target.files[0]);
+  // Reset value so picking the same file again always fires 'change'
+  fileInput.value = '';
+});
 
 function setFile(file) {
   state.audioFile = file;
@@ -1070,15 +1099,26 @@ function setFile(file) {
 const STAGE_EST = [55000, 8000, 6000, 10000]; // ms estimates
 let _stageTimers = [];
 
+const _PP_STAGES = [
+  { icon: '🎙', label: 'Whisper transcription' },
+  { icon: '🌐', label: 'Translating to English' },
+  { icon: '🧠', label: 'Extracting clinical entities' },
+  { icon: '🏷', label: 'Mapping ICD-10 + SNOMED-CT' },
+];
+
+function _resetPipelineStages() {
+  // Rebuild inner HTML so icons are always restored regardless of previous state
+  _PP_STAGES.forEach(({ icon, label }, i) => {
+    document.getElementById(`pp-${i}`).className = 'pp-stage';
+    document.getElementById(`pp-${i}`).innerHTML =
+      `<span class="pp-icon">${icon}</span><span class="pp-label">${label}</span><span class="pp-time" id="pp-t${i}"></span>`;
+  });
+}
+
 function startPipelineAnimation() {
   for (const t of _stageTimers) clearTimeout(t);
   _stageTimers = [];
-
-  // Reset all stages
-  for (let i = 0; i < 4; i++) {
-    document.getElementById(`pp-${i}`).className = 'pp-stage';
-    document.getElementById(`pp-t${i}`).textContent = '';
-  }
+  _resetPipelineStages();
 
   let cumulative = 0;
   for (let i = 0; i < 4; i++) {
@@ -1087,22 +1127,19 @@ function startPipelineAnimation() {
     const prev = i - 1;
 
     _stageTimers.push(setTimeout(() => {
-      // Mark previous as done (with "..." since we don't know exact time yet)
       if (prev >= 0) {
         const prevEl = document.getElementById(`pp-${prev}`);
         prevEl.className = 'pp-stage done-stage';
-        // Remove spinner if present
         const sp = prevEl.querySelector('.spinner-sm');
         if (sp) sp.remove();
         document.getElementById(`pp-t${prev}`).textContent = '…';
       }
-      // Start current
       const el = document.getElementById(`pp-${i}`);
       el.className = 'pp-stage running';
       const icon = el.querySelector('.pp-icon');
       const sp = document.createElement('span');
       sp.className = 'spinner-sm';
-      icon.replaceWith(sp);
+      if (icon) icon.replaceWith(sp); else el.prepend(sp);
     }, delay));
   }
 }
@@ -1131,11 +1168,6 @@ function finalizePipelineAnimation(timings) {
 
   // Update sidebar legend
   show('pipeline-legend', 'flex');
-  keys.forEach((key, i) => {
-    const dotEl = document.getElementById(`pl-${key.replace('_', '')}`);
-    if (dotEl) dotEl.className = 'pipeline-dot done';
-  });
-  // Fix IDs that have underscores
   const legendMap = {
     'transcribe': 'pl-transcribe',
     'translate':  'pl-translate',
@@ -1149,10 +1181,22 @@ function finalizePipelineAnimation(timings) {
 }
 
 // ── Transcribe ─────────────────────────────────────────────────────────────
+let _transcribeAbort = null;
+
+document.getElementById('stop-btn').addEventListener('click', () => {
+  if (_transcribeAbort) {
+    for (const t of _stageTimers) clearTimeout(t);
+    _stageTimers = [];
+    _transcribeAbort.abort();
+    _transcribeAbort = null;
+  }
+});
+
 document.getElementById('transcribe-btn').addEventListener('click', async () => {
   if (!state.audioFile) return;
-  const btn = document.getElementById('transcribe-btn');
-  const err = document.getElementById('transcribe-err');
+  const btn     = document.getElementById('transcribe-btn');
+  const stopBtn = document.getElementById('stop-btn');
+  const err     = document.getElementById('transcribe-err');
 
   // Show loading
   hide('empty-state'); hide('results');
@@ -1160,6 +1204,7 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
   err.classList.add('hidden');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Processing…';
+  stopBtn.style.display = '';
 
   startPipelineAnimation();
 
@@ -1167,8 +1212,10 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
   form.append('audio', state.audioFile);
   form.append('mode', state.mode);
 
+  _transcribeAbort = new AbortController();
+
   try {
-    const r = await fetch('/transcribe', { method: 'POST', body: form });
+    const r = await fetch('/transcribe', { method: 'POST', body: form, signal: _transcribeAbort.signal });
     const d = await r.json();
     if (!r.ok) throw new Error(d.detail?.detail || d.detail || r.statusText);
 
@@ -1191,15 +1238,21 @@ document.getElementById('transcribe-btn').addEventListener('click', async () => 
     updateApproveBtn();
   } catch (e) {
     hide('loading-state'); show('empty-state', 'flex');
-    err.textContent = `Error: ${e.message}`;
+    if (e.name === 'AbortError') {
+      err.textContent = 'Transcription stopped.';
+    } else {
+      err.textContent = `Error: ${e.message}`;
+      ['pl-transcribe','pl-translate','pl-extract','pl-codes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = 'pipeline-dot error';
+      });
+      show('pipeline-legend', 'flex');
+    }
     err.classList.remove('hidden');
-    // Mark all pipeline stages as error in legend
-    ['pl-transcribe','pl-translate','pl-extract','pl-codes'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.className = 'pipeline-dot error';
-    });
-    show('pipeline-legend', 'flex');
   } finally {
+    _transcribeAbort = null;
+    fileInput.value = '';        // always reset so re-selecting the same file fires 'change'
+    stopBtn.style.display = 'none';
     btn.disabled = false;
     btn.textContent = 'Transcribe Hindi Audio';
   }

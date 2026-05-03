@@ -109,7 +109,7 @@ def translate_segments_offline(segments: list) -> list:
             model=_OLLAMA_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
-            max_tokens=1024,  # clinical translations are short — cap prevents over-generation
+            max_tokens=4096,  # raised from 1024 — long recordings with many segments need headroom
         )
         raw = response.choices[0].message.content or ""
         translations = _parse_json_array(raw)

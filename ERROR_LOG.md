@@ -545,3 +545,82 @@ If this is a private repository, make sure to pass a token having permission to 
 ```
 **Resolution:** BLOCKED — needs investigation
 ---
+
+## ERROR — 2026-04-28T16:29:40.991966+00:00
+**Step:** Step 12 — /transcribe
+**What I was doing:** Running pipeline stage: transcribe
+**Error type:** APIConnectionError
+**Full error message:**
+```
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_sync\connection.py", line 101, in handle_request
+    raise exc
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_sync\connection.py", line 78, in handle_request
+    stream = self._connect(request)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_sync\connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_backends\sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+  File "C:\Users\tgmad\AppData\Local\Programs\Python\Python310\lib\contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+  File "C:\Users\tgmad\AppData\Local\Programs\Python\Python310\lib\contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\review_ui\app.py", line 289, in transcribe_audio
+    entities = extract_offline(english_full_text)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\extract_offline.py", line 153, in extract_offline
+    data = _call_vllm(transcript)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\pipeline\extract_offline.py", line 119, in _call_vllm
+    response = client.chat.completions.create(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "C:\Users\tgmad\OneDrive\Desktop\clinscribe\.venv\lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+```
+**Resolution:** BLOCKED — needs investigation
+---

@@ -10,9 +10,19 @@ from datetime import datetime, timezone
 
 import requests
 
+import anthropic
+
 import config
 
 logger = logging.getLogger(__name__)
+
+_anthropic_client: anthropic.Anthropic | None = None
+
+def _get_anthropic_client() -> anthropic.Anthropic:
+    global _anthropic_client
+    if _anthropic_client is None:
+        _anthropic_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    return _anthropic_client
 
 
 # ── Custom exceptions ─────────────────────────────────────────────────────────
@@ -224,8 +234,7 @@ def _claude_semantic_match(term: str, candidates: list[dict]) -> str | None:
     Asks Claude to pick the closest matching OpenMRS concept for a clinical term.
     Returns the UUID of the best match, or None if nothing is close enough.
     """
-    import anthropic
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    client = _get_anthropic_client()
 
     options = "\n".join(
         f"- UUID: {c['uuid']} | Name: {c['name']} | Class: {c['conceptClass']}"

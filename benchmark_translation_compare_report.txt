@@ -1,0 +1,125 @@
+Translation Benchmark: MarianMT (LangTrans) vs Qwen2.5-7b vs Claude
+========================================================================
+
+Models tested:
+  [MarianMT]  Helsinki-NLP/opus-mt-hi-en  (previous offline / LangTrans)
+  [Qwen]      clinscribe-llm:latest via Ollama  (current offline)
+  [Claude]    claude-sonnet-4-6  (current online)
+
+TIMING SUMMARY
+────────────────────────────────────────────────────────────────────────
+Scenario                         MarianMT       Qwen     Claude
+───────────────────────────────────────────────────────────────
+Fever and headache                   1.0s       6.9s       1.7s
+Chest pain and breathlessness        0.5s       4.0s       2.1s
+Diabetes follow-up                   0.2s       4.3s       2.1s
+Cough and TB concern                 0.3s       4.5s       1.9s
+Stomach pain and vomiting            0.5s       4.3s       2.0s
+Joint pain                           0.3s       4.2s       1.7s
+───────────────────────────────────────────────────────────────
+TOTAL                                2.9s      28.2s      11.5s
+
+QUALITY HEURISTICS  (clinical_kw = keywords from 20-word list found in output)
+────────────────────────────────────────────────────────────────────────
+Scenario                         MarianMT       Qwen     Claude  word-ratio
+──────────────────────────────────────────────────────────────────────────────
+Fever and headache                  4/22       4/22       4/22  M=0.37  Q=1.23  C=1.03
+Chest pain and breathlessness       2/22       5/22       5/22  M=0.49  Q=0.95  C=0.86
+Diabetes follow-up                  2/22       3/22       3/22  M=0.83  Q=1.1  C=1.03
+Cough and TB concern                6/22       7/22       7/22  M=0.75  Q=1.14  C=1.11
+Stomach pain and vomiting           0/22       4/22       0/22  M=0.64  Q=1.06  C=0.06
+Joint pain                          1/22       4/22       4/22  M=0.47  Q=1.16  C=1.09
+
+
+FULL TRANSLATION COMPARISON
+========================================================================
+
+────────────────────────────────────────────────────────────────────────
+Clip: Fever and headache (hindi_1.mp3)
+────────────────────────────────────────────────────────────────────────
+
+  [0] Hindi    : मुझे तीन दिनों से बुखार है और सिर में दर्द भी है। कोई दवाइ नहीं ली अभी तक। डॉक्टर, तापमान 102 डिग्री है। पानी पीते रहें और पैरा सिटामोल ले।
+      MarianMT  : I have three days of fever and pain. No medicine yet.
+      Qwen      : I have had a fever for three days and there is also pain in my head. I haven't taken any medication so far. Doctor, my temperature is 102 degrees. Drink plenty of fluids and take some acetaminophen.
+      Claude    : I have had a fever for three days and also have a headache. I haven't taken any medicine yet. Doctor, the temperature is 102 degrees. Keep drinking water and take Paracetamol.
+
+
+────────────────────────────────────────────────────────────────────────
+Clip: Chest pain and breathlessness (hindi_2.mp3)
+────────────────────────────────────────────────────────────────────────
+
+  [0] Hindi    : मुझे सीने में दर्द हो रहा है और सास लेने में तकलीफ है। यह दो घंटे से हो रहा है। पहले से ब्लाड प्रेशर की बीमारी है। यह बहुत गंभीर लक्षण है। अभी इसी जी करते हैं।
+      MarianMT  : I'm getting pain in the chest and I'm struggling to take my mother-in-law. It's going through two hours.
+      Qwen      : I am experiencing chest pain and difficulty breathing. This has been going on for two hours. I have a history of blood pressure issues. This is a very serious symptom. We are currently managing it.
+      Claude    : I am having chest pain and difficulty breathing. This has been happening for two hours. I already have blood pressure disease. These are very serious symptoms. Let's deal with this right now.
+
+
+────────────────────────────────────────────────────────────────────────
+Clip: Diabetes follow-up (hindi_3.mp3)
+────────────────────────────────────────────────────────────────────────
+
+  [0] Hindi    : मेरी शुगर की जाँच करवाई।
+      MarianMT  : Examine my understandr.
+      Qwen      : I had my sugar test done.
+      Claude    : I got my sugar tested.
+
+  [1] Hindi    : फास्टिंग ब्लड शुगर 180 आई है।
+      MarianMT  : Fasting blood pressure has arrived 180.
+      Qwen      : My fasting blood glucose is 180.
+      Claude    : The fasting blood sugar has come to 180.
+
+  [2] Hindi    : क्या आप मेटफॉर्मिन ले रहे हैं।
+      MarianMT  : What you're taking in.
+      Qwen      : Are you taking metformin?
+      Claude    : Are you taking Metformin?
+
+  [3] Hindi    : हाँ, रोज सुबह लेता हूँ।
+      MarianMT  : Yes, I take every morning.
+      Qwen      : Yes, I take it every morning.
+      Claude    : Yes, I take it every morning.
+
+  [4] Hindi    : खाने में चीनी और चावल कम करें।
+      MarianMT  : Reduce Chinese and rice in food.
+      Qwen      : Reduce the intake of sugar and rice in your meals.
+      Claude    : Reduce sugar and rice in your diet.
+
+
+────────────────────────────────────────────────────────────────────────
+Clip: Cough and TB concern (hindi_4.mp3)
+────────────────────────────────────────────────────────────────────────
+
+  [0] Hindi    : दो हफ्तों से खासी है। कभी-कभी बलगम में खून भी आता है।
+      MarianMT  : It's special for two weeks, sometimes blood occurs on occasion.
+      Qwen      : Has had a persistent cough for two weeks. Blood has been present in the sputum occasionally.
+      Claude    : She has been coughing for two weeks. Sometimes there is also blood in the sputum.
+
+  [1] Hindi    : क्या आप किसी TB के मरीज़ के संपर्क में आएं। हाँ, मेरे पडोसी को TB है।
+      MarianMT  : Well, what do you get in contact with a TB patient.
+      Qwen      : Have you been in contact with a TB patient? Yes, my neighbor has TB.
+      Claude    : Have you come in contact with any TB patient? Yes, my neighbor has TB.
+
+  [2] Hindi    : सीने का X-ray और Sputum टेस्ट करना होगा।
+      MarianMT  : The chest's X-ray and Sputum test.
+      Qwen      : A chest X-ray and sputum test will need to be performed.
+      Claude    : A chest X-ray and sputum test will need to be done.
+
+
+────────────────────────────────────────────────────────────────────────
+Clip: Stomach pain and vomiting (hindi_5.mp3)
+────────────────────────────────────────────────────────────────────────
+
+  [0] Hindi    : पेट में बहुत दर्ध है और उल्टी भी हो रही है। कल राज से दस्त भी है। क्या बाहर का खाना खाया था। हाँ, कल शाम को। यहाँ फूट पॉइस्निंग लग रही है। ओरस पीते रहें।
+      MarianMT  : There's a lot of diarrhea in the stomach and there's also diarrhea. Tomorrow there's plenty of food we ate outside. Yes, tomorrow evening.
+      Qwen      : The patient is experiencing severe abdominal pain and vomiting. There was a episode of syncope yesterday. Did the patient eat anything outside yesterday evening? Yes, in the evening. Here, the footings are starting to appear. Keep lying down.
+      Claude    : [Claude error]
+
+
+────────────────────────────────────────────────────────────────────────
+Clip: Joint pain (hindi_6.mp3)
+────────────────────────────────────────────────────────────────────────
+
+  [0] Hindi    : दोनों घुटनों में दर्ध है। सीढिया चड़ने में बहुत तकलीफ होती है। यह कितने समय से है? तीन महीने से। उम्र के साथ आर्थराइटिस हो सकता है। एक्सरे और ब्लड टेस्ट करेंगे।
+      MarianMT  : The two knees are under a lot of pain. How long has this been since?
+      Qwen      : Both hips are painful. There is a lot of discomfort on climbing stairs. How long has this been going on? For three months. Rheumatoid arthritis can occur with age. We will do an X-ray and blood test.
+      Claude    : There is pain in both knees. There is a lot of difficulty climbing stairs. How long has this been? For three months. Arthritis can occur with age. We will do an X-ray and blood test.
+
